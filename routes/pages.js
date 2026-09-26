@@ -351,7 +351,14 @@ router.post('/upload-image', requireAuth, (req, res) => {
       return res.status(400).json({ error: 'No image file was provided' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    let imageUrl = `/uploads/${req.file.filename}`;
+    try {
+      const fileBuf = fs.readFileSync(req.file.path);
+      const mime = req.file.mimetype || 'image/png';
+      imageUrl = `data:${mime};base64,${fileBuf.toString('base64')}`;
+    } catch (readErr) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
     return res.json({
       success: true,
       message: 'Image uploaded successfully',

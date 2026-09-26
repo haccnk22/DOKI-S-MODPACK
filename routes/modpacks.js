@@ -283,8 +283,17 @@ router.post('/', requireAdmin, (req, res) => {
           .join(',');
       }
 
-      // Thumbnail path
-      const thumbnailPath = req.file ? `/uploads/${req.file.filename}` : null;
+      // Thumbnail path (saving data URL for serverless durability + fallback disk path)
+      let thumbnailPath = null;
+      if (req.file) {
+        try {
+          const fileBuf = fs.readFileSync(req.file.path);
+          const mime = req.file.mimetype || 'image/png';
+          thumbnailPath = `data:${mime};base64,${fileBuf.toString('base64')}`;
+        } catch (readErr) {
+          thumbnailPath = `/uploads/${req.file.filename}`;
+        }
+      }
 
       // Parameterized insert
       const insertStmt = db.prepare(`
@@ -406,8 +415,14 @@ router.put('/:id', requireAdmin, (req, res) => {
 
       let newThumbnail = existing.thumbnail;
       if (req.file) {
-        newThumbnail = `/uploads/${req.file.filename}`;
-        // Remove previous thumbnail if exists
+        try {
+          const fileBuf = fs.readFileSync(req.file.path);
+          const mime = req.file.mimetype || 'image/png';
+          newThumbnail = `data:${mime};base64,${fileBuf.toString('base64')}`;
+        } catch (readErr) {
+          newThumbnail = `/uploads/${req.file.filename}`;
+        }
+        // Remove previous thumbnail if exists on disk
         if (existing.thumbnail && existing.thumbnail.startsWith('/uploads/')) {
           const oldFilename = existing.thumbnail.replace('/uploads/', '');
           const oldPath = path.join(uploadsDir, oldFilename);
