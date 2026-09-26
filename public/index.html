@@ -184,6 +184,48 @@
     import { initVoxelScene } from '/js/voxel-scene.js';
 
     // Dynamically load featured modpack data so any edited thumbnail/details update instantly
+    function applyFeaturedPack(pack) {
+      if (!pack) return;
+      const bannerImg = document.getElementById('featured-banner-img');
+      if (bannerImg && pack.thumbnail) {
+        bannerImg.src = pack.thumbnail;
+      }
+
+      const authorEl = document.getElementById('featured-author');
+      if (authorEl && pack.owner_username) {
+        authorEl.textContent = `Created by ${pack.owner_username}`;
+      }
+
+      const statusBadge = document.getElementById('featured-status-badge');
+      if (statusBadge) {
+        const relStatus = pack.release_status || 'released';
+        if (relStatus === 'demo') {
+          statusBadge.style.background = 'rgba(236, 201, 75, 0.2)';
+          statusBadge.style.borderColor = '#ecc94b';
+          statusBadge.style.color = '#ecc94b';
+          statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8 4.8 1.9-4.8 1.9L12 16.5l-1.9-4.9-4.8-1.9 4.8-1.9L12 3z"></path></svg> DEMO BUILD • FULL RELEASE: ${pack.release_date || 'TBA'}`;
+        } else if (relStatus === 'coming_soon') {
+          statusBadge.style.background = 'rgba(183, 148, 244, 0.2)';
+          statusBadge.style.borderColor = '#b794f4';
+          statusBadge.style.color = '#b794f4';
+          statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> COMING SOON • EXPECTED: ${pack.release_date || 'SOON'}`;
+        } else {
+          statusBadge.style.background = 'rgba(45, 212, 191, 0.2)';
+          statusBadge.style.borderColor = '#2dd4bf';
+          statusBadge.style.color = '#2dd4bf';
+          statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg> OFFICIAL RELEASE BY DOKI`;
+        }
+      }
+    }
+
+    // Apply cached featured pack instantly on page load (0 delay)
+    try {
+      const cached = localStorage.getItem('cached_featured_modpack');
+      if (cached) {
+        applyFeaturedPack(JSON.parse(cached));
+      }
+    } catch (e) {}
+
     async function loadFeaturedModpack() {
       try {
         const res = await fetch('/api/modpacks');
@@ -195,36 +237,11 @@
         const pack = data.modpacks.find(p => p.id === 1) || data.modpacks[0];
         if (!pack) return;
 
-        const bannerImg = document.getElementById('featured-banner-img');
-        if (bannerImg && pack.thumbnail) {
-          bannerImg.src = pack.thumbnail;
-        }
+        try {
+          localStorage.setItem('cached_featured_modpack', JSON.stringify(pack));
+        } catch (e) {}
 
-        const authorEl = document.getElementById('featured-author');
-        if (authorEl && pack.owner_username) {
-          authorEl.textContent = `Created by ${pack.owner_username}`;
-        }
-
-        const statusBadge = document.getElementById('featured-status-badge');
-        if (statusBadge) {
-          const relStatus = pack.release_status || 'released';
-          if (relStatus === 'demo') {
-            statusBadge.style.background = 'rgba(236, 201, 75, 0.2)';
-            statusBadge.style.borderColor = '#ecc94b';
-            statusBadge.style.color = '#ecc94b';
-            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8 4.8 1.9-4.8 1.9L12 16.5l-1.9-4.9-4.8-1.9 4.8-1.9L12 3z"></path></svg> DEMO BUILD • FULL RELEASE: ${pack.release_date || 'TBA'}`;
-          } else if (relStatus === 'coming_soon') {
-            statusBadge.style.background = 'rgba(183, 148, 244, 0.2)';
-            statusBadge.style.borderColor = '#b794f4';
-            statusBadge.style.color = '#b794f4';
-            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> COMING SOON • EXPECTED: ${pack.release_date || 'SOON'}`;
-          } else {
-            statusBadge.style.background = 'rgba(45, 212, 191, 0.2)';
-            statusBadge.style.borderColor = '#2dd4bf';
-            statusBadge.style.color = '#2dd4bf';
-            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg> OFFICIAL RELEASE BY DOKI`;
-          }
-        }
+        applyFeaturedPack(pack);
       } catch (err) {
         console.warn('Could not refresh featured modpack banner:', err);
       }
