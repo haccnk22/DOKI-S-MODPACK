@@ -67,14 +67,32 @@ app.use((req, res, next) => {
 app.use('/vendor/three', express.static(path.join(publicDir, 'vendor/three')));
 app.use('/node_modules/three', express.static(path.join(rootDir, 'node_modules/three')));
 
-// Serve user uploads from all potential static & dynamic locations
+// Comprehensive upload file serving from static, public, and serverless tmp locations
+const serveUploadFile = (req, res) => {
+  const filename = path.basename(req.params.filename || '');
+  if (!filename) return res.status(404).send('Not found');
+  const candidates = [
+    path.join(uploadsDir, filename),
+    path.join(publicDir, 'uploads', filename),
+    path.join(staticUploadsDir, filename),
+    path.join(publicDir, filename),
+    path.join(publicDir, 'images', filename),
+    path.join('/tmp', 'mcintroduce', 'uploads', filename),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return res.sendFile(candidate);
+    }
+  }
+  return res.status(404).send('Upload file not found');
+};
+
+app.get('/uploads/:filename', serveUploadFile);
+app.get('/api/uploads/:filename', serveUploadFile);
 app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(path.join(publicDir, 'uploads')));
 if (uploadsDir !== staticUploadsDir && fs.existsSync(staticUploadsDir)) {
   app.use('/uploads', express.static(staticUploadsDir));
-}
-const publicUploads = path.join(publicDir, 'uploads');
-if (fs.existsSync(publicUploads)) {
-  app.use('/uploads', express.static(publicUploads));
 }
 
 // Mount API routes (supporting both with and without /api prefix for proxy resilience)

@@ -13,29 +13,41 @@ const nodeModulesThree = path.join(rootDir, 'node_modules', 'three');
 
 console.log('Running Vercel build asset sync...');
 
-// Ensure Three.js is in public/vendor for static CDN serving
+// 1. Copy full Three.js build files (three.core.js, three.module.js, etc.)
 if (fs.existsSync(nodeModulesThree)) {
-  fs.mkdirSync(path.join(publicVendorDir, 'build'), { recursive: true });
-  fs.mkdirSync(path.join(publicVendorDir, 'examples', 'jsm', 'controls'), { recursive: true });
+  const threeBuild = path.join(nodeModulesThree, 'build');
+  const destBuild = path.join(publicVendorDir, 'build');
+  fs.mkdirSync(destBuild, { recursive: true });
 
-  const threeSrc = path.join(nodeModulesThree, 'build', 'three.module.js');
-  const threeDest = path.join(publicVendorDir, 'build', 'three.module.js');
-  if (fs.existsSync(threeSrc)) {
-    fs.copyFileSync(threeSrc, threeDest);
+  if (fs.existsSync(threeBuild)) {
+    for (const file of fs.readdirSync(threeBuild)) {
+      const src = path.join(threeBuild, file);
+      const dest = path.join(destBuild, file);
+      if (fs.statSync(src).isFile()) {
+        fs.copyFileSync(src, dest);
+      }
+    }
   }
 
-  const controlsSrc = path.join(nodeModulesThree, 'examples', 'jsm', 'controls', 'OrbitControls.js');
-  const controlsDest = path.join(publicVendorDir, 'examples', 'jsm', 'controls', 'OrbitControls.js');
+  // Copy OrbitControls and controls directory
+  const controlsSrc = path.join(nodeModulesThree, 'examples', 'jsm', 'controls');
+  const controlsDest = path.join(publicVendorDir, 'examples', 'jsm', 'controls');
   if (fs.existsSync(controlsSrc)) {
-    fs.copyFileSync(controlsSrc, controlsDest);
+    fs.mkdirSync(controlsDest, { recursive: true });
+    for (const file of fs.readdirSync(controlsSrc)) {
+      const src = path.join(controlsSrc, file);
+      const dest = path.join(controlsDest, file);
+      if (fs.statSync(src).isFile()) {
+        fs.copyFileSync(src, dest);
+      }
+    }
   }
 }
 
-// Ensure default uploads are copied to public/uploads
+// 2. Copy all default uploads
 fs.mkdirSync(publicUploadsDir, { recursive: true });
 if (fs.existsSync(uploadsDir)) {
-  const files = fs.readdirSync(uploadsDir);
-  for (const file of files) {
+  for (const file of fs.readdirSync(uploadsDir)) {
     const src = path.join(uploadsDir, file);
     const dest = path.join(publicUploadsDir, file);
     if (fs.statSync(src).isFile()) {
@@ -44,4 +56,11 @@ if (fs.existsSync(uploadsDir)) {
   }
 }
 
-console.log('Vercel build asset sync complete.');
+// 3. Ensure panorama_5.png is synced
+const publicPanorama = path.join(rootDir, 'public', 'panorama_5.png');
+if (fs.existsSync(publicPanorama)) {
+  fs.copyFileSync(publicPanorama, path.join(publicUploadsDir, 'panorama_5.png'));
+  fs.copyFileSync(publicPanorama, path.join(uploadsDir, 'panorama_5.png'));
+}
+
+console.log('Build asset sync complete.');
