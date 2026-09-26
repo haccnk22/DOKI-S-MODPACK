@@ -6,16 +6,12 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/node_modules/three/(.*)",
+      "source": "/node_modules/(.*)",
       "destination": "/api/index.js"
     },
     {
       "source": "/uploads/(.*)",
       "destination": "/api/index.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/$1"
     }
   ]
 }

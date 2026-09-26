@@ -1,11 +1,24 @@
 import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
-import { dataDir, isVercel, rootDir } from './paths.js';
+import os from 'os';
+import { dataDir, isServerless, rootDir } from './paths.js';
 
-// If running in Vercel serverless environment and a pre-seeded local db exists, copy it to /tmp/data
-const dbPath = path.join(dataDir, 'mcintroduce.db');
-if (isVercel) {
+// Safe determination of writable SQLite database path
+let dbPath = path.join(dataDir, 'mcintroduce.db');
+
+try {
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+} catch (err) {
+  // If dataDir cannot be written (e.g. read-only filesystem), fallback directly to os.tmpdir()
+  dbPath = path.join(os.tmpdir(), 'mcintroduce.db');
+}
+
+// If running in serverless environment and a pre-seeded local db exists, copy it to the writable location
+if (isServerless) {
   const localDbPath = path.join(rootDir, 'data', 'mcintroduce.db');
   if (!fs.existsSync(dbPath) && fs.existsSync(localDbPath)) {
     try {
