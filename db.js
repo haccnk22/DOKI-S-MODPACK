@@ -228,7 +228,8 @@ try {
 • Survival & Antidote Crafting: Synthesize hazard suits, craft localized quarantine barriers, and brew biological cures.
 • Return to The End: Gather purified catalyst stones from the deepest withered bastions to rekindle the fractured End Portal and face the final truth.`;
 
-    db.prepare("UPDATE modpacks SET thumbnail = '/uploads/panorama_5.png', long_description = ? WHERE id = ?").run(cleanLongDesc, biohazardPack.id);
+    // Update long description without overwriting user's custom uploaded thumbnail
+    db.prepare("UPDATE modpacks SET long_description = ? WHERE id = ?").run(cleanLongDesc, biohazardPack.id);
     const existingPage = db.prepare('SELECT layout_json FROM modpack_pages WHERE modpack_id = ?').get(biohazardPack.id);
     if (existingPage && existingPage.layout_json) {
       let updatedLayoutJson = existingPage.layout_json
