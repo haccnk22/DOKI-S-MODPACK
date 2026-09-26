@@ -63,23 +63,28 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve three.js module from node_modules for frontend import maps
+// Serve three.js module from vendor and node_modules
+app.use('/vendor/three', express.static(path.join(publicDir, 'vendor/three')));
 app.use('/node_modules/three', express.static(path.join(rootDir, 'node_modules/three')));
 
-// Serve user uploads
+// Serve user uploads from all potential static & dynamic locations
 app.use('/uploads', express.static(uploadsDir));
 if (uploadsDir !== staticUploadsDir && fs.existsSync(staticUploadsDir)) {
   app.use('/uploads', express.static(staticUploadsDir));
 }
+const publicUploads = path.join(publicDir, 'uploads');
+if (fs.existsSync(publicUploads)) {
+  app.use('/uploads', express.static(publicUploads));
+}
 
-// Mount API routes
-app.use('/api/auth', authRouter);
-app.use('/api/modpacks/:id/page', pagesRouter);
-app.use('/api/modpacks', modpacksRouter);
-app.use('/api/dashboard', dashboardRouter);
+// Mount API routes (supporting both with and without /api prefix for proxy resilience)
+app.use(['/api/auth', '/auth'], authRouter);
+app.use(['/api/modpacks/:id/page', '/modpacks/:id/page'], pagesRouter);
+app.use(['/api/modpacks', '/modpacks'], modpacksRouter);
+app.use(['/api/dashboard', '/dashboard-api'], dashboardRouter);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', message: "Doki's Modpacks server is running" });
 });
 
