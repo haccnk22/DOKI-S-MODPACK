@@ -22,9 +22,23 @@
   };
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  initNavbar();
-});
+function renderLoggedOut(navActions) {
+  if (!navActions) return;
+  navActions.replaceChildren();
+
+  const loginLink = document.createElement('a');
+  loginLink.href = '/login.html';
+  loginLink.className = 'btn btn-secondary btn-sm';
+  loginLink.textContent = 'Log In';
+
+  const registerLink = document.createElement('a');
+  registerLink.href = '/register.html';
+  registerLink.className = 'btn btn-primary btn-sm';
+  registerLink.textContent = 'Register';
+
+  navActions.appendChild(loginLink);
+  navActions.appendChild(registerLink);
+}
 
 async function initNavbar() {
   // Highlight current active link in navigation
@@ -46,6 +60,11 @@ async function initNavbar() {
   const navActions = document.getElementById('nav-actions');
   if (!navActions) return;
 
+  // Render logged-out buttons initially if empty
+  if (navActions.children.length === 0) {
+    renderLoggedOut(navActions);
+  }
+
   try {
     const token = localStorage.getItem('mc_auth_token');
     const headers = {};
@@ -55,12 +74,10 @@ async function initNavbar() {
 
     const res = await fetch('/api/auth/me', { headers });
     if (!res.ok) {
-      throw new Error('Failed to fetch auth status');
+      renderLoggedOut(navActions);
+      return;
     }
     const data = await res.json();
-
-    // Clear previous children
-    navActions.replaceChildren();
 
     if (data.loggedIn && data.user) {
       if (window.MCAuth) {
@@ -101,6 +118,9 @@ async function initNavbar() {
           navLinksContainer.appendChild(pub);
         }
       }
+
+      // Clear actions container before building user badge
+      navActions.replaceChildren();
 
       // User badge
       const badge = document.createElement('div');
@@ -157,21 +177,16 @@ async function initNavbar() {
       navActions.appendChild(badge);
       navActions.appendChild(logoutBtn);
     } else {
-      // User is logged out
-      const loginLink = document.createElement('a');
-      loginLink.href = '/login.html';
-      loginLink.className = 'btn btn-secondary btn-sm';
-      loginLink.textContent = 'Log In';
-
-      const registerLink = document.createElement('a');
-      registerLink.href = '/register.html';
-      registerLink.className = 'btn btn-primary btn-sm';
-      registerLink.textContent = 'Register';
-
-      navActions.appendChild(loginLink);
-      navActions.appendChild(registerLink);
+      renderLoggedOut(navActions);
     }
   } catch (err) {
-    console.error('Navbar init error:', err);
+    console.warn('Navbar auth error, rendering logged-out view:', err);
+    renderLoggedOut(navActions);
   }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNavbar);
+} else {
+  initNavbar();
 }

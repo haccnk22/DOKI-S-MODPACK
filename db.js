@@ -112,17 +112,19 @@ try {
   // Column already exists
 }
 
-// Seed the admin account 'doki' and the featured modpack 'Minecraft 2: Biohazard'
+// Seed the admin account and the featured modpack 'Minecraft 2: Biohazard'
 import bcrypt from 'bcryptjs';
 
 try {
-  // Check if admin user 'doki' exists
-  let doki = db.prepare('SELECT id, username, role FROM users WHERE username = ? COLLATE NOCASE').get('doki');
+  const adminUsername = (process.env.ADMIN_USERNAME || 'doki').trim();
+  const adminPassword = (process.env.ADMIN_PASSWORD || 'doki123').trim();
+
+  // Check if admin user exists
+  let doki = db.prepare('SELECT id, username, role FROM users WHERE username = ? COLLATE NOCASE').get(adminUsername);
   if (!doki) {
-    const passwordHash = bcrypt.hashSync('doki123', 10);
-    const result = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run('doki', passwordHash, 'admin');
-    doki = { id: Number(result.lastInsertRowid), username: 'doki', role: 'admin' };
-    console.log("Seeded admin account 'doki' with password 'doki123'");
+    const passwordHash = bcrypt.hashSync(adminPassword, 10);
+    const result = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run(adminUsername, passwordHash, 'admin');
+    doki = { id: Number(result.lastInsertRowid), username: adminUsername, role: 'admin' };
   } else if (doki.role !== 'admin') {
     db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(doki.id);
     doki.role = 'admin';
