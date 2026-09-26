@@ -2,13 +2,9 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
 import db from '../db.js';
 import { getAuthenticatedUser } from '../auth-helper.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+import { uploadsDir } from '../paths.js';
 
 const router = express.Router({ mergeParams: true });
 

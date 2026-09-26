@@ -1,19 +1,22 @@
 import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
+import { dataDir, isVercel, rootDir } from './paths.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Ensure the data directory exists
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// If running in Vercel serverless environment and a pre-seeded local db exists, copy it to /tmp/data
+const dbPath = path.join(dataDir, 'mcintroduce.db');
+if (isVercel) {
+  const localDbPath = path.join(rootDir, 'data', 'mcintroduce.db');
+  if (!fs.existsSync(dbPath) && fs.existsSync(localDbPath)) {
+    try {
+      fs.copyFileSync(localDbPath, dbPath);
+    } catch (e) {
+      console.warn('Vercel database copy notice:', e.message);
+    }
+  }
 }
 
 // Initialize SQLite database using Node's built-in node:sqlite
-const dbPath = path.join(dataDir, 'mcintroduce.db');
 const db = new DatabaseSync(dbPath);
 
 // Enable foreign keys and WAL mode for reliability and performance
