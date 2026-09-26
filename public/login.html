@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Doki's Modpacks</title>
+  <meta name="description" content="Log in to your account to review, request, and download Minecraft modpacks.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1 class="auth-title">Welcome Back</h1>
+          <p class="auth-subtitle">Log in to your MCIntroduce account</p>
+        </div>
+
+        <div id="login-alert" class="form-alert form-alert-error" role="alert"></div>
+
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="username" class="form-label">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-input"
+              autocomplete="username"
+              placeholder="e.g. SteveCraft"
+              required
+              autofocus
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              required
+            >
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-block">
+            Log In
+          </button>
+        </form>
+
+        <div class="auth-footer" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          Don't have an account? <a href="/register.html">Register here</a>
+          <div style="margin-top: 0.75rem; font-size: 0.85rem; color: #2dd4bf; background: rgba(45, 212, 191, 0.1); padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(45, 212, 191, 0.3); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"></path></svg>
+            <strong>Admin Account:</strong> Username: <code>doki</code> • Password: <code>doki123</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+        <a href="/login.html">Log In</a>
+        <a href="/register.html">Register</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const alertBox = document.getElementById('login-alert');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+      alertBox.textContent = '';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        alertBox.textContent = 'Please provide both username and password.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Logging in...';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Use textContent to safely render server error message
+          alertBox.textContent = data.error || 'Failed to log in. Please try again.';
+          alertBox.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Log In';
+          return;
+        }
+
+        // On success, save token and user for iframe compatibility and redirect
+        if (data.token) {
+          localStorage.setItem('mc_auth_token', data.token);
+        }
+        if (data.user) {
+          localStorage.setItem('mc_user', JSON.stringify(data.user));
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get('returnUrl') || '/';
+        window.location.href = returnUrl;
+      } catch (err) {
+        console.error('Login submit error:', err);
+        alertBox.textContent = 'A network error occurred. Please try again.';
+        alertBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Log In';
+      }
+    });
+  </script>
+</body>
+</html>

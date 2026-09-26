@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modpack Presentation - Doki's Modpacks</title>
+  <meta name="description" content="Custom Minecraft modpack presentation page featuring 3D voxel previews, screenshot galleries, and detailed guides.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+
+  <!-- Local Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/node_modules/three/build/three.module.js",
+      "three/addons/": "/node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    .custom-page-wrapper {
+      min-height: calc(100vh - 140px);
+      padding: 2.5rem 1.5rem 5rem;
+      transition: background-color 0.3s;
+    }
+
+    .custom-page-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .custom-block-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 2.25rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      position: relative;
+    }
+
+    .block-text-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+      line-height: 1.25;
+    }
+
+    .block-text-subtitle {
+      font-size: 1.15rem;
+      color: var(--page-accent, var(--accent-green-light));
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .block-text-content {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      white-space: pre-line;
+    }
+
+    /* Gallery Block */
+    .block-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    .gallery-img-wrapper {
+      border-radius: 6px;
+      overflow: hidden;
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      aspect-ratio: 16 / 9;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .gallery-img-wrapper:hover {
+      transform: translateY(-2px);
+      border-color: var(--page-accent, var(--accent-green));
+    }
+
+    .gallery-img-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* YouTube Embed Block */
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 */
+      height: 0;
+      overflow: hidden;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background-color: #000;
+      margin-top: 1rem;
+    }
+
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    /* Features Block */
+    .features-list-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    .feature-item-card {
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.25rem;
+      border-left: 3px solid var(--page-accent, var(--accent-green));
+    }
+
+    .feature-item-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-item-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.35rem;
+    }
+
+    .feature-item-desc {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* 3D Cube Block */
+    .cube-block-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 1rem 0;
+    }
+
+    .cube-canvas-box {
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.2) 70%);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .cube-info-box {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .cube-caption-text {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    /* Owner Action Banner */
+    .owner-editor-banner {
+      background-color: rgba(91, 135, 49, 0.15);
+      border: 1px solid var(--accent-green);
+      border-radius: 6px;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="custom-page-wrapper" class="custom-page-wrapper">
+      <div class="custom-page-container">
+        <!-- Owner banner (shown if logged in user owns modpack) -->
+        <div id="owner-banner" class="owner-editor-banner" style="display: none;">
+          <div>
+            <strong style="color: var(--accent-green-light);">Creator Mode:</strong> You are viewing your modpack's custom presentation page.
+          </div>
+          <a id="btn-edit-page" href="#" class="btn btn-primary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Open Page Designer
+          </a>
+        </div>
+
+        <div id="blocks-container">
+          <div class="loading-spinner" style="text-align: center; padding: 4rem; color: var(--text-muted); font-family: monospace;">
+            Loading presentation...
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { renderSpinningCube } from '/js/spinning-cube.js';
+    import { ICONS, getIcon } from '/js/icons.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const modpackId = params.get('id');
+
+    const wrapper = document.getElementById('custom-page-wrapper');
+    const container = document.getElementById('blocks-container');
+    const ownerBanner = document.getElementById('owner-banner');
+    const btnEditPage = document.getElementById('btn-edit-page');
+
+    if (!modpackId) {
+      container.replaceChildren();
+      const errCard = document.createElement('div');
+      errCard.className = 'empty-state';
+      const h3 = document.createElement('h3');
+      h3.textContent = 'Modpack Not Specified';
+      const p = document.createElement('p');
+      p.textContent = 'Please select a valid modpack from the directory.';
+      const a = document.createElement('a');
+      a.href = '/modpacks.html';
+      a.className = 'btn btn-primary';
+      a.style.marginTop = '1rem';
+      a.textContent = 'Browse Modpacks';
+      errCard.appendChild(h3);
+      errCard.appendChild(p);
+      errCard.appendChild(a);
+      container.appendChild(errCard);
+    } else {
+      loadCustomPage(modpackId);
+    }
+
+    async function loadCustomPage(id) {
+      try {
+        const res = await fetch(`/api/modpacks/${id}/page`);
+        if (!res.ok) {
+          throw new Error('Modpack presentation not found');
+        }
+        const data = await res.json();
+        const page = data.page;
+        const modpack = data.modpack;
+
+        document.title = `${modpack.name} - Presentation | MCIntroduce`;
+
+        // Apply theme settings
+        if (page.settings) {
+          if (page.settings.backgroundColor) {
+            wrapper.style.backgroundColor = page.settings.backgroundColor;
+          }
+          if (page.settings.accentColor) {
+            wrapper.style.setProperty('--page-accent', page.settings.accentColor);
+          }
+        }
+
+        // Owner banner
+        if (data.isOwner) {
+          ownerBanner.style.display = 'flex';
+          btnEditPage.href = `/page-editor.html?id=${id}`;
+        }
+
+        container.replaceChildren();
+
+        // Render blocks
+        if (!page.blocks || page.blocks.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          const h3 = document.createElement('h3');
+          h3.textContent = 'No presentation blocks available';
+          empty.appendChild(h3);
+          container.appendChild(empty);
+          return;
+        }
+
+        page.blocks.forEach(block => {
+          const card = document.createElement('div');
+          card.className = 'custom-block-card';
+
+          switch (block.type) {
+            case 'text': {
+              if (block.title) {
+                const title = document.createElement('h2');
+                title.className = 'block-text-title';
+                title.textContent = block.title;
+                card.appendChild(title);
+              }
+              if (block.subtitle) {
+                const sub = document.createElement('div');
+                sub.className = 'block-text-subtitle';
+                sub.textContent = block.subtitle;
+                card.appendChild(sub);
+              }
+              if (block.content) {
+                const content = document.createElement('div');
+                content.className = 'block-text-content';
+                content.textContent = block.content;
+                card.appendChild(content);
+              }
+              break;
+            }
+
+            case 'gallery': {
+              if (block.title) {
+                const title = document.createElement('h3');
+                title.style.color = '#ffffff';
+                title.style.marginBottom = '1rem';
+                title.textContent = block.title;
+                card.appendChild(title);
+              }
+              if (block.images && block.images.length > 0) {
+                const grid = document.createElement('div');
+                grid.className = 'block-gallery-grid';
+                block.images.forEach(imgUrl => {
+                  const item = document.createElement('div');
+                  item.className = 'gallery-img-wrapper';
+                  const img = document.createElement('img');
+                  img.src = imgUrl;
+                  img.alt = block.title || 'Modpack Screenshot';
+                  item.appendChild(img);
+                  grid.appendChild(item);
+                });
+                card.appendChild(grid);
+              }
+              break;
+            }
+
+            case 'youtube': {
+              if (block.title) {
+                const title = document.createElement('h3');
+                title.style.color = '#ffffff';
+                title.style.marginBottom = '0.75rem';
+                title.textContent = block.title;
+                card.appendChild(title);
+              }
+              if (block.videoId) {
+                const videoBox = document.createElement('div');
+                videoBox.className = 'video-container';
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube-nocookie.com/embed/${block.videoId}`;
+                iframe.title = block.title || 'YouTube Video';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                iframe.allowFullscreen = true;
+                videoBox.appendChild(iframe);
+                card.appendChild(videoBox);
+              }
+              break;
+            }
+
+            case 'features': {
+              if (block.title) {
+                const title = document.createElement('h3');
+                title.style.color = '#ffffff';
+                title.style.marginBottom = '1rem';
+                title.textContent = block.title;
+                card.appendChild(title);
+              }
+              if (block.items && block.items.length > 0) {
+                const grid = document.createElement('div');
+                grid.className = 'features-list-grid';
+                block.items.forEach(item => {
+                  const itemBox = document.createElement('div');
+                  itemBox.className = 'feature-item-card';
+
+                  const icon = document.createElement('div');
+                  icon.className = 'feature-item-icon';
+                  icon.style.color = 'var(--page-accent, var(--accent-green-light))';
+                  icon.innerHTML = getIcon(item.icon || 'sparkles', 'icon-svg-lg');
+                  itemBox.appendChild(icon);
+
+                  const h4 = document.createElement('div');
+                  h4.className = 'feature-item-title';
+                  h4.textContent = item.title;
+                  itemBox.appendChild(h4);
+
+                  const desc = document.createElement('div');
+                  desc.className = 'feature-item-desc';
+                  desc.textContent = item.description;
+                  itemBox.appendChild(desc);
+
+                  grid.appendChild(itemBox);
+                });
+                card.appendChild(grid);
+              }
+              break;
+            }
+
+            case 'cube_3d': {
+              if (block.title) {
+                const title = document.createElement('h3');
+                title.style.color = '#ffffff';
+                title.style.marginBottom = '0.5rem';
+                title.textContent = block.title;
+                card.appendChild(title);
+              }
+              const cubeWrapper = document.createElement('div');
+              cubeWrapper.className = 'cube-block-wrapper';
+
+              const canvasBox = document.createElement('div');
+              canvasBox.className = 'cube-canvas-box';
+              cubeWrapper.appendChild(canvasBox);
+
+              const infoBox = document.createElement('div');
+              infoBox.className = 'cube-info-box';
+              const caption = document.createElement('p');
+              caption.className = 'cube-caption-text';
+              caption.textContent = block.caption || 'Interact with the 3D voxel cube above: drag with your mouse to rotate!';
+              const hint = document.createElement('div');
+              hint.style.fontSize = '0.8rem';
+              hint.style.color = 'var(--text-muted)';
+              hint.style.marginTop = '0.5rem';
+              hint.style.fontFamily = 'monospace';
+              hint.textContent = `Block type: ${block.blockType.toUpperCase()} • Drag to spin`;
+              infoBox.appendChild(caption);
+              infoBox.appendChild(hint);
+              cubeWrapper.appendChild(infoBox);
+
+              card.appendChild(cubeWrapper);
+
+              // Render cube after element added to DOM
+              setTimeout(() => {
+                renderSpinningCube(canvasBox, block.blockType || 'diamond');
+              }, 10);
+              break;
+            }
+
+            case 'download': {
+              const dlCard = document.createElement('div');
+              dlCard.style.textAlign = 'center';
+              dlCard.style.padding = '1.5rem 1rem';
+
+              const dlTitle = document.createElement('h3');
+              dlTitle.style.fontSize = '1.6rem';
+              dlTitle.style.color = '#ffffff';
+              dlTitle.style.marginBottom = '0.5rem';
+              dlTitle.textContent = block.title || 'Download Modpack';
+              dlCard.appendChild(dlTitle);
+
+              const dlDesc = document.createElement('p');
+              dlDesc.style.color = 'var(--text-secondary)';
+              dlDesc.style.marginBottom = '1.5rem';
+              dlDesc.style.maxWidth = '600px';
+              dlDesc.style.margin = '0 auto 1.5rem';
+              dlDesc.textContent = block.description || 'Access and download this modpack through MCIntroduce.';
+              dlCard.appendChild(dlDesc);
+
+              const btn = document.createElement('a');
+              btn.href = window.MCAuth ? window.MCAuth.getDownloadUrl(modpack.id) : `/api/modpacks/${modpack.id}/download`;
+              btn.className = 'btn btn-primary';
+              btn.style.fontSize = '1.1rem';
+              btn.style.padding = '0.85rem 2rem';
+              btn.style.display = 'inline-flex';
+              btn.style.alignItems = 'center';
+              btn.style.gap = '8px';
+              btn.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Download Modpack`;
+              dlCard.appendChild(btn);
+
+              const viewDetails = document.createElement('div');
+              viewDetails.style.marginTop = '1rem';
+              const detailLink = document.createElement('a');
+              detailLink.href = `/modpack.html?id=${modpack.id}`;
+              detailLink.style.fontSize = '0.85rem';
+              detailLink.style.color = 'var(--text-muted)';
+              detailLink.style.textDecoration = 'underline';
+              detailLink.textContent = 'View permissions and modpack details';
+              viewDetails.appendChild(detailLink);
+              dlCard.appendChild(viewDetails);
+
+              card.appendChild(dlCard);
+              break;
+            }
+          }
+
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Custom page load error:', err);
+        container.replaceChildren();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'empty-state';
+        const h3 = document.createElement('h3');
+        h3.textContent = 'Error Loading Presentation';
+        const p = document.createElement('p');
+        p.textContent = 'Could not load presentation page. Please try again.';
+        errDiv.appendChild(h3);
+        errDiv.appendChild(p);
+        container.appendChild(errDiv);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doki's Modpacks - Minecraft 2: Biohazard</title>
+  <meta name="description" content="Official Minecraft modpack hub featuring Minecraft 2: Biohazard by doki. The Ender Dragon has been defeated, but a mysterious plague has withered the Overworld.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+
+  <!-- Local Three.js Import Map (served from /node_modules/three via npm, zero external CDN) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/node_modules/three/build/three.module.js",
+      "three/addons/": "/node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link active">Home</a>
+          <a href="/modpacks.html" class="nav-link">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-container" style="text-align: center;">
+      <!-- Hero Header: Minecraft 2: Biohazard -->
+      <div class="hero-card" style="max-width: 920px; margin: 0 auto; border-color: #2dd4bf; box-shadow: 0 0 25px rgba(45, 212, 191, 0.2);">
+        <div id="featured-status-badge" class="phase-badge" style="background: rgba(45, 212, 191, 0.2); color: #2dd4bf; border: 1px solid #2dd4bf; display: inline-flex; align-items: center; gap: 6px;">
+          <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg>
+          OFFICIAL RELEASE BY DOKI
+        </div>
+        <h1 class="hero-title" style="margin-top: 0.5rem;">
+          Minecraft 2: <span style="color: #2dd4bf;">Biohazard</span>
+        </h1>
+        <p class="hero-subtitle" style="font-size: 1.15rem; line-height: 1.6; max-width: 800px; margin: 0.5rem auto 1.25rem;">
+          The Ender Dragon has been defeated, but when we return to the Overworld, everything has withered away due to a strange plague caused by a mysterious entity. We will have to wander everywhere to search for the truth and also to return to The End.
+        </p>
+
+        <!-- Featured Banner Preview -->
+        <div style="margin: 1.5rem 0; border-radius: 8px; overflow: hidden; border: 2px solid #334155; position: relative; background: #0c1410; min-height: 220px;">
+          <img id="featured-banner-img" src="/uploads/panorama_5.png" alt="Minecraft 2: Biohazard Official Thumbnail" style="width: 100%; max-height: 380px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='/uploads/panorama_5.png';" referrerpolicy="no-referrer">
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(12, 20, 16, 0.95)); padding: 1.25rem; text-align: left; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <span id="featured-author" style="font-family: monospace; font-size: 0.85rem; color: #2dd4bf; background: rgba(0,0,0,0.6); padding: 0.25rem 0.6rem; border-radius: 4px;">Created by doki</span>
+              <div id="featured-sub-tagline" style="color: #fff; font-weight: 700; font-size: 1.1rem; margin-top: 0.3rem;">Post-Dragon Survival • Withered Overworld • Return to The End</div>
+            </div>
+            <a id="featured-download-link" href="/modpack.html?id=1" class="btn btn-primary" style="background: #2dd4bf; color: #0f172a; border-color: #2dd4bf; font-weight: bold; gap: 6px;">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Download Modpack
+            </a>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
+          <a href="/modpack.html?id=1" class="btn btn-primary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg>
+            View Modpack Details
+          </a>
+          <a href="/page.html?id=1" class="btn btn-secondary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.5-.74 1.5-1.5 0-.41-.16-.79-.44-1.07-.27-.28-.44-.65-.44-1.07 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.97-4.48-9-10-9z"></path></svg>
+            Custom 3D Showcase
+          </a>
+          <a href="/modpacks.html" class="btn btn-secondary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            All Modpacks
+          </a>
+        </div>
+      </div>
+
+      <!-- Phase 5: Interactive 3D Minecraft Scene -->
+      <div class="voxel-viewport-card" style="margin-top: 2.5rem;">
+        <div id="voxel-canvas-container" class="voxel-canvas-wrapper"></div>
+        <div class="voxel-hud">
+          <div class="voxel-controls-group">
+            <button id="btn-cycle" class="voxel-hud-btn active" title="Automatic Day/Night Cycle">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Cycle
+            </button>
+            <button id="btn-day" class="voxel-hud-btn" title="Set Noon Daytime">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              Day
+            </button>
+            <button id="btn-sunset" class="voxel-hud-btn" title="Set Golden Hour Sunset">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"></path><line x1="12" y1="9" x2="12" y2="2"></line><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line><line x1="23" y1="22" x2="1" y2="22"></line><polyline points="16 5 12 9 8 5"></polyline></svg>
+              Sunset
+            </button>
+            <button id="btn-night" class="voxel-hud-btn" title="Set Midnight Moonlight">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              Night
+            </button>
+          </div>
+
+          <div class="voxel-hint-badge">
+            Drag to orbit • Scroll to zoom • Right-click to pan
+          </div>
+
+          <div class="voxel-controls-group">
+            <button id="btn-rotate" class="voxel-hud-btn" title="Toggle Auto-Rotation">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+              Pause Spin
+            </button>
+            <button id="btn-reset" class="voxel-hud-btn" title="Reset View Angle">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              Reset View
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Grid -->
+      <div class="grid-3" style="text-align: left; margin-top: 2rem;">
+        <div class="feature-box">
+          <div class="feature-icon" style="color: #2dd4bf;">
+            <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg>
+          </div>
+          <h3 class="feature-title">Minecraft 2: Biohazard</h3>
+          <p class="feature-desc">
+            Explore a decayed Overworld after the Ender Dragon defeat. Gather clues, craft vaccines, avoid mutated horrors, and uncover the mysterious entity.
+          </p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon" style="color: var(--accent-green-light);">
+            <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <h3 class="feature-title">Interactive 3D Voxel World</h3>
+          <p class="feature-desc">
+            Experience our real-time Three.js voxel terrain featuring dynamic day/night cycles, orbiting celestial bodies, floating item artifacts, and smooth controls.
+          </p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon" style="color: #f5b942;">
+            <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"></path></svg>
+          </div>
+          <h3 class="feature-title">Doki's Official Hub</h3>
+          <p class="feature-desc">
+            Verified modpack downloads curated directly by doki. Users can register, submit reviews, and download directly via secure Google Drive mirrors.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+        <a href="/login.html">Log In</a>
+        <a href="/register.html">Register</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Initialize 3D Voxel Scene and Dynamic Featured Modpack -->
+  <script type="module">
+    import { initVoxelScene } from '/js/voxel-scene.js';
+
+    // Dynamically load featured modpack data so any edited thumbnail/details update instantly
+    async function loadFeaturedModpack() {
+      try {
+        const res = await fetch('/api/modpacks');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.modpacks || data.modpacks.length === 0) return;
+
+        // Find Minecraft 2: Biohazard (id: 1) or take the first featured pack
+        const pack = data.modpacks.find(p => p.id === 1) || data.modpacks[0];
+        if (!pack) return;
+
+        const bannerImg = document.getElementById('featured-banner-img');
+        if (bannerImg && pack.thumbnail) {
+          bannerImg.src = pack.thumbnail;
+        }
+
+        const authorEl = document.getElementById('featured-author');
+        if (authorEl && pack.owner_username) {
+          authorEl.textContent = `Created by ${pack.owner_username}`;
+        }
+
+        const statusBadge = document.getElementById('featured-status-badge');
+        if (statusBadge) {
+          const relStatus = pack.release_status || 'released';
+          if (relStatus === 'demo') {
+            statusBadge.style.background = 'rgba(236, 201, 75, 0.2)';
+            statusBadge.style.borderColor = '#ecc94b';
+            statusBadge.style.color = '#ecc94b';
+            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8 4.8 1.9-4.8 1.9L12 16.5l-1.9-4.9-4.8-1.9 4.8-1.9L12 3z"></path></svg> DEMO BUILD • FULL RELEASE: ${pack.release_date || 'TBA'}`;
+          } else if (relStatus === 'coming_soon') {
+            statusBadge.style.background = 'rgba(183, 148, 244, 0.2)';
+            statusBadge.style.borderColor = '#b794f4';
+            statusBadge.style.color = '#b794f4';
+            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> COMING SOON • EXPECTED: ${pack.release_date || 'SOON'}`;
+          } else {
+            statusBadge.style.background = 'rgba(45, 212, 191, 0.2)';
+            statusBadge.style.borderColor = '#2dd4bf';
+            statusBadge.style.color = '#2dd4bf';
+            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg> OFFICIAL RELEASE BY DOKI`;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not refresh featured modpack banner:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFeaturedModpack();
+
+      const sceneApi = initVoxelScene('voxel-canvas-container');
+      if (!sceneApi) return;
+
+      const btnCycle = document.getElementById('btn-cycle');
+      const btnDay = document.getElementById('btn-day');
+      const btnSunset = document.getElementById('btn-sunset');
+      const btnNight = document.getElementById('btn-night');
+      const btnRotate = document.getElementById('btn-rotate');
+      const btnReset = document.getElementById('btn-reset');
+
+      const timeButtons = [btnCycle, btnDay, btnSunset, btnNight];
+      function setActiveTimeBtn(activeBtn) {
+        timeButtons.forEach(b => b.classList.remove('active'));
+        activeBtn.classList.add('active');
+      }
+
+      btnCycle.addEventListener('click', () => {
+        sceneApi.setAutoCycle(true);
+        setActiveTimeBtn(btnCycle);
+      });
+
+      btnDay.addEventListener('click', () => {
+        sceneApi.setTimeOfDay(0.35); // Sun high overhead
+        setActiveTimeBtn(btnDay);
+      });
+
+      btnSunset.addEventListener('click', () => {
+        sceneApi.setTimeOfDay(0.72); // Low golden sun
+        setActiveTimeBtn(btnSunset);
+      });
+
+      btnNight.addEventListener('click', () => {
+        sceneApi.setTimeOfDay(0.0); // Moon overhead
+        setActiveTimeBtn(btnNight);
+      });
+
+      let isRotating = true;
+      btnRotate.addEventListener('click', () => {
+        isRotating = sceneApi.toggleAutoRotate();
+        if (isRotating) {
+          btnRotate.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> Pause Spin`;
+        } else {
+          btnRotate.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Resume Spin`;
+        }
+      });
+
+      btnReset.addEventListener('click', () => {
+        sceneApi.resetCamera();
+      });
+    });
+  </script>
+</body>
+</html>

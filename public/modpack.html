@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modpack Details - Doki's Modpacks</title>
+  <meta name="description" content="View Minecraft modpack details, screenshots, description, and download information.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+  <style>
+    .modpack-detail-card {
+      background-color: var(--bg-surface);
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      padding: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      margin-bottom: 2rem;
+    }
+
+    .meta-bar {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+
+    .meta-bar strong {
+      color: var(--accent-green-light);
+    }
+
+    .download-action-box {
+      background-color: var(--bg-surface-elevated);
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.75rem;
+      margin: 2rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .download-info h3 {
+      font-size: 1.25rem;
+      color: #ffffff;
+      margin-bottom: 0.35rem;
+    }
+
+    .download-info p {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      margin: 0;
+    }
+
+    .prose-section {
+      margin-top: 2rem;
+    }
+
+    .prose-section h2 {
+      font-size: 1.4rem;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      border-left: 4px solid var(--accent-green);
+      padding-left: 0.75rem;
+    }
+
+    .description-text {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link active">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-container" id="modpack-content">
+      <div class="loading-spinner" style="text-align: center; padding: 4rem; color: var(--text-muted); font-family: monospace;">
+        Loading modpack details...
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+        <a href="/login.html">Log In</a>
+        <a href="/register.html">Register</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const content = document.getElementById('modpack-content');
+    const urlParams = new URLSearchParams(window.location.search);
+    const modpackId = urlParams.get('id');
+
+    async function loadModpackDetail() {
+      if (!modpackId) {
+        renderError('Modpack Not Found', 'No modpack ID was specified in the URL.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/modpacks/${modpackId}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            renderError('Modpack Not Found', 'The requested modpack does not exist or has been removed.');
+          } else {
+            renderError('Error', 'Failed to retrieve modpack details.');
+          }
+          return;
+        }
+
+        const data = await res.json();
+        const pack = data.modpack;
+
+        document.title = `${pack.name} - MCIntroduce`;
+        content.replaceChildren();
+
+        const card = document.createElement('div');
+        card.className = 'modpack-detail-card';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'detail-header';
+
+        const titleGroup = document.createElement('div');
+
+        const badgesRow = document.createElement('div');
+        badgesRow.style.display = 'flex';
+        badgesRow.style.alignItems = 'center';
+        badgesRow.style.gap = '0.6rem';
+        badgesRow.style.flexWrap = 'wrap';
+        badgesRow.style.marginBottom = '0.5rem';
+
+        // Access badge
+        const badge = document.createElement('span');
+        badge.className = 'phase-badge';
+        badge.textContent = pack.download_mode === 'open' ? 'OPEN ACCESS' : 'APPROVAL REQUIRED';
+        badgesRow.appendChild(badge);
+
+        // Phase 8 Release Status Badge
+        const relStatus = pack.release_status || 'released';
+        const statusBadge = document.createElement('span');
+        if (relStatus === 'demo') {
+          statusBadge.className = 'badge-status badge-status-demo';
+          statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8 4.8 1.9-4.8 1.9L12 16.5l-1.9-4.9-4.8-1.9 4.8-1.9L12 3z"></path></svg> Demo`;
+        } else if (relStatus === 'coming_soon') {
+          statusBadge.className = 'badge-status badge-status-coming-soon';
+          statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Coming Soon`;
+        } else {
+          statusBadge.className = 'badge-status badge-status-released';
+          statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Released`;
+        }
+        badgesRow.appendChild(statusBadge);
+
+        if (pack.release_date && (relStatus === 'demo' || relStatus === 'coming_soon')) {
+          const relDatePill = document.createElement('span');
+          relDatePill.className = 'release-date-pill';
+          relDatePill.textContent = `Release: ${pack.release_date}`;
+          badgesRow.appendChild(relDatePill);
+        }
+
+        titleGroup.appendChild(badgesRow);
+
+        const title = document.createElement('h1');
+        title.className = 'page-title';
+        // Strictly textContent
+        title.textContent = pack.name;
+        titleGroup.appendChild(title);
+
+        const metaBar = document.createElement('div');
+        metaBar.className = 'meta-bar';
+
+        const authorSpan = document.createElement('span');
+        authorSpan.textContent = 'Created by ';
+        const strongAuth = document.createElement('strong');
+        // Strictly textContent
+        strongAuth.textContent = pack.owner_username;
+        authorSpan.appendChild(strongAuth);
+        metaBar.appendChild(authorSpan);
+
+        const dateSpan = document.createElement('span');
+        const d = new Date(pack.created_at);
+        dateSpan.textContent = `Published: ${isNaN(d.getTime()) ? '' : d.toLocaleDateString()}`;
+        metaBar.appendChild(dateSpan);
+
+        titleGroup.appendChild(metaBar);
+        header.appendChild(titleGroup);
+
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'detail-actions';
+
+        const customPageBtn = document.createElement('a');
+        customPageBtn.href = `/page.html?id=${pack.id}`;
+        customPageBtn.className = 'btn btn-secondary';
+        customPageBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" style="margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.5-.74 1.5-1.5 0-.41-.16-.79-.44-1.07-.27-.28-.44-.65-.44-1.07 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.97-4.48-9-10-9z"></path></svg>Custom Presentation`;
+        actions.appendChild(customPageBtn);
+
+        if (pack.isOwner) {
+          const pageDesignerBtn = document.createElement('a');
+          pageDesignerBtn.href = `/page-editor.html?id=${pack.id}`;
+          pageDesignerBtn.className = 'btn btn-secondary';
+          pageDesignerBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" style="margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Page Designer`;
+          actions.appendChild(pageDesignerBtn);
+
+          const editBtn = document.createElement('a');
+          editBtn.href = `/modpack-create.html?id=${pack.id}`;
+          editBtn.className = 'btn btn-secondary';
+          editBtn.textContent = 'Edit Modpack';
+          actions.appendChild(editBtn);
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'btn btn-danger';
+          deleteBtn.textContent = 'Delete Modpack';
+          deleteBtn.addEventListener('click', async () => {
+            if (confirm(`Are you sure you want to delete "${pack.name}"? This cannot be undone.`)) {
+              deleteBtn.disabled = true;
+              deleteBtn.textContent = 'Deleting...';
+              try {
+                const delRes = await fetch(`/api/modpacks/${pack.id}`, { method: 'DELETE' });
+                if (delRes.ok) {
+                  window.location.href = '/modpacks.html';
+                } else {
+                  const errData = await delRes.json();
+                  alert(errData.error || 'Failed to delete modpack');
+                  deleteBtn.disabled = false;
+                  deleteBtn.textContent = 'Delete Modpack';
+                }
+              } catch (e) {
+                console.error('Delete error:', e);
+                alert('A network error occurred.');
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete Modpack';
+              }
+            }
+          });
+          actions.appendChild(deleteBtn);
+        }
+
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        // Banner / Thumbnail
+        if (pack.thumbnail) {
+          const banner = document.createElement('div');
+          banner.className = 'detail-banner';
+          const img = document.createElement('img');
+          img.src = pack.thumbnail;
+          img.alt = pack.name;
+          banner.appendChild(img);
+          card.appendChild(banner);
+        }
+
+        // Tags
+        if (pack.tags) {
+          const tagContainer = document.createElement('div');
+          tagContainer.className = 'modpack-tags';
+          tagContainer.style.marginBottom = '1.5rem';
+          const tags = pack.tags.split(',').filter(t => t.trim().length > 0);
+          tags.forEach(t => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'modpack-tag';
+            tagSpan.textContent = t.trim();
+            tagContainer.appendChild(tagSpan);
+          });
+          card.appendChild(tagContainer);
+        }
+
+        // Summary section
+        const summaryBox = document.createElement('div');
+        summaryBox.className = 'status-box';
+        summaryBox.style.fontSize = '1.05rem';
+        summaryBox.style.lineHeight = '1.7';
+        // Strictly textContent
+        summaryBox.textContent = pack.short_description;
+        card.appendChild(summaryBox);
+
+        // Download Action Box with live permission & request handling
+        const downloadBox = document.createElement('div');
+        downloadBox.className = 'download-action-box';
+        downloadBox.id = 'download-action-box';
+
+        const dlInfo = document.createElement('div');
+        dlInfo.className = 'download-info';
+        const dlTitle = document.createElement('h3');
+        dlTitle.textContent = pack.download_mode === 'open' ? 'Open Access Modpack' : 'Approval-Gated Modpack';
+        const dlSub = document.createElement('p');
+        dlSub.id = 'download-status-desc';
+        dlSub.textContent = 'Checking download availability...';
+        dlInfo.appendChild(dlTitle);
+        dlInfo.appendChild(dlSub);
+        downloadBox.appendChild(dlInfo);
+
+        const dlActionsContainer = document.createElement('div');
+        dlActionsContainer.id = 'download-actions-container';
+        downloadBox.appendChild(dlActionsContainer);
+
+        card.appendChild(downloadBox);
+
+        // Fetch download status asynchronously
+        (async function checkStatus() {
+          try {
+            const statusRes = await fetch(`/api/modpacks/${pack.id}/download-status`);
+            const statusData = await statusRes.json();
+            dlActionsContainer.replaceChildren();
+
+            if (!statusData.loggedIn) {
+              dlSub.textContent = 'You must be signed in to download this modpack.';
+              const loginBtn = document.createElement('a');
+              loginBtn.href = `/login.html?returnUrl=${encodeURIComponent('/modpack.html?id=' + pack.id)}`;
+              loginBtn.className = 'btn btn-secondary';
+              loginBtn.textContent = 'Log In to Access Download';
+              dlActionsContainer.appendChild(loginBtn);
+              return;
+            }
+
+            const relStatus = pack.release_status || 'released';
+
+            if (relStatus === 'coming_soon' && !statusData.isOwner && !statusData.isAdmin) {
+              dlTitle.textContent = 'Coming Soon';
+              dlSub.innerHTML = `This modpack is currently in active development. Expected release: <strong>${pack.release_date || 'Coming Soon'}</strong>. Downloads will open upon release.`;
+              const comingSoonBadge = document.createElement('div');
+              comingSoonBadge.className = 'badge-status badge-status-coming-soon';
+              comingSoonBadge.style.padding = '0.6rem 1.25rem';
+              comingSoonBadge.style.fontSize = '0.9rem';
+              comingSoonBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Releasing ${pack.release_date || 'Soon'}`;
+              dlActionsContainer.appendChild(comingSoonBadge);
+              return;
+            }
+
+            if (statusData.isOwner) {
+              dlSub.textContent = 'You are the creator of this modpack. You have permanent download access.';
+              const dlBtn = document.createElement('a');
+              dlBtn.className = 'btn btn-primary';
+              dlBtn.href = window.MCAuth ? window.MCAuth.getDownloadUrl(pack.id) : `/api/modpacks/${pack.id}/download`;
+              dlBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" style="margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>${relStatus === 'demo' ? 'Download Demo Build' : 'Download Modpack'}`;
+              dlActionsContainer.appendChild(dlBtn);
+              return;
+            }
+
+            if (statusData.downloadMode === 'open') {
+              if (relStatus === 'demo') {
+                dlSub.innerHTML = `Playable demo build available now. Full release target: <strong>${pack.release_date || 'TBA'}</strong>.`;
+              } else {
+                dlSub.textContent = 'This modpack is openly available for registered users.';
+              }
+              const dlBtn = document.createElement('a');
+              dlBtn.className = 'btn btn-primary';
+              dlBtn.href = window.MCAuth ? window.MCAuth.getDownloadUrl(pack.id) : `/api/modpacks/${pack.id}/download`;
+              dlBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" style="margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>${relStatus === 'demo' ? 'Download Demo Build' : 'Download Modpack'}`;
+              dlActionsContainer.appendChild(dlBtn);
+              return;
+            }
+
+            // Approval mode
+            if (statusData.requestStatus === 'none') {
+              dlSub.textContent = 'The creator requires approval before granting download access.';
+              const reqBtn = document.createElement('button');
+              reqBtn.className = 'btn btn-primary';
+              reqBtn.textContent = 'Request Download Access';
+              reqBtn.addEventListener('click', async () => {
+                reqBtn.disabled = true;
+                reqBtn.textContent = 'Submitting Request...';
+                try {
+                  const reqRes = await fetch(`/api/modpacks/${pack.id}/request-download`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                  });
+                  const reqResult = await reqRes.json();
+                  if (reqRes.ok) {
+                    checkStatus();
+                  } else {
+                    alert(reqResult.error || 'Failed to submit download request');
+                    reqBtn.disabled = false;
+                    reqBtn.textContent = 'Request Download Access';
+                  }
+                } catch (e) {
+                  console.error('Request error:', e);
+                  alert('Network error while requesting download.');
+                  reqBtn.disabled = false;
+                  reqBtn.textContent = 'Request Download Access';
+                }
+              });
+              dlActionsContainer.appendChild(reqBtn);
+            } else if (statusData.requestStatus === 'pending') {
+              dlSub.textContent = 'Your request has been submitted to the creator. Download access will unlock upon approval.';
+              const pendingBadge = document.createElement('span');
+              pendingBadge.className = 'badge-approval';
+              pendingBadge.style.padding = '0.5rem 1rem';
+              pendingBadge.style.borderRadius = '4px';
+              pendingBadge.style.fontWeight = '700';
+              pendingBadge.style.display = 'inline-flex';
+              pendingBadge.style.alignItems = 'center';
+              pendingBadge.style.gap = '6px';
+              pendingBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Request Pending Approval`;
+              dlActionsContainer.appendChild(pendingBadge);
+            } else if (statusData.requestStatus === 'approved') {
+              dlSub.textContent = 'Great news! Your request was approved by the creator.';
+              const dlBtn = document.createElement('a');
+              dlBtn.className = 'btn btn-primary';
+              dlBtn.href = window.MCAuth ? window.MCAuth.getDownloadUrl(pack.id) : `/api/modpacks/${pack.id}/download`;
+              dlBtn.style.display = 'inline-flex';
+              dlBtn.style.alignItems = 'center';
+              dlBtn.style.gap = '6px';
+              dlBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Download Modpack`;
+              dlActionsContainer.appendChild(dlBtn);
+            } else if (statusData.requestStatus === 'rejected') {
+              dlSub.textContent = 'Your download request was declined by the creator.';
+              const retryBtn = document.createElement('button');
+              retryBtn.className = 'btn btn-secondary';
+              retryBtn.textContent = 'Re-request Access';
+              retryBtn.addEventListener('click', async () => {
+                retryBtn.disabled = true;
+                retryBtn.textContent = 'Re-submitting...';
+                try {
+                  const reqRes = await fetch(`/api/modpacks/${pack.id}/request-download`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                  });
+                  if (reqRes.ok) {
+                    checkStatus();
+                  } else {
+                    const reqResult = await reqRes.json();
+                    alert(reqResult.error || 'Failed to re-submit request');
+                    retryBtn.disabled = false;
+                    retryBtn.textContent = 'Re-request Access';
+                  }
+                } catch (e) {
+                  console.error('Re-request error:', e);
+                  retryBtn.disabled = false;
+                  retryBtn.textContent = 'Re-request Access';
+                }
+              });
+              dlActionsContainer.appendChild(retryBtn);
+            }
+          } catch (err) {
+            console.error('Error fetching download status:', err);
+            dlSub.textContent = 'Unable to check download permission.';
+          }
+        })();
+
+        // Long Description
+        const prose = document.createElement('div');
+        prose.className = 'prose-section';
+        const descTitle = document.createElement('h2');
+        descTitle.textContent = 'About This Modpack';
+        prose.appendChild(descTitle);
+
+        const descText = document.createElement('div');
+        descText.className = 'description-text';
+        // Strictly textContent
+        descText.textContent = pack.long_description;
+        prose.appendChild(descText);
+
+        card.appendChild(prose);
+        content.appendChild(card);
+      } catch (err) {
+        console.error('Modpack load error:', err);
+        renderError('Error', 'Unable to communicate with the server. Please try again later.');
+      }
+    }
+
+    function renderError(heading, message) {
+      content.replaceChildren();
+      const card = document.createElement('div');
+      card.className = 'empty-state';
+      const h = document.createElement('h3');
+      h.textContent = heading;
+      const p = document.createElement('p');
+      p.textContent = message;
+      const back = document.createElement('a');
+      back.href = '/modpacks.html';
+      back.className = 'btn btn-secondary';
+      back.style.marginTop = '1.25rem';
+      back.textContent = '← Back to Modpacks';
+      card.appendChild(h);
+      card.appendChild(p);
+      card.appendChild(back);
+      content.appendChild(card);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadModpackDetail);
+  </script>
+</body>
+</html>

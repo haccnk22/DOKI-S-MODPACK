@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Designer - Doki's Modpacks</title>
+  <meta name="description" content="Custom Minecraft modpack drag-and-drop page designer with live real-time preview and 2D vector icons.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+
+  <!-- Local Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/node_modules/three/build/three.module.js",
+      "three/addons/": "/node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .editor-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .editor-pane {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .preview-pane {
+      position: sticky;
+      top: 90px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      border-radius: 8px;
+      border: 2px solid var(--border-highlight);
+      padding: 1.5rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .block-card-editor {
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
+      position: relative;
+    }
+
+    .block-card-editor:hover {
+      border-color: var(--border-highlight);
+    }
+
+    .block-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      gap: 0.5rem;
+    }
+
+    .block-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .block-type-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 0.2rem 0.6rem;
+      border-radius: 3px;
+      color: var(--accent-green-light);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .block-order-actions {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .btn-icon {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .btn-icon:hover {
+      color: #ffffff;
+      border-color: var(--text-primary);
+    }
+
+    .btn-icon.btn-del:hover {
+      background-color: #e53e3e;
+      border-color: #e53e3e;
+      color: #ffffff;
+    }
+
+    .palette-swatches {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: 2px solid var(--border-color);
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.15);
+      border-color: #ffffff;
+    }
+
+    .add-block-menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem;
+      margin: 1rem 0 1.5rem;
+    }
+
+    .btn-add-block {
+      background-color: var(--bg-surface-elevated);
+      border: 1px dashed var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.65rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s;
+    }
+
+    .btn-add-block:hover {
+      background-color: var(--bg-surface);
+      border-color: var(--accent-green);
+      color: var(--accent-green-light);
+    }
+
+    .live-preview-box {
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+    }
+
+    .drag-instruction-hint {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-container" style="max-width: 1350px;">
+      <!-- Top Action Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <div class="phase-badge" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+            DRAG & DROP DESIGNER (PHASE 7)
+          </div>
+          <h1 class="page-title" style="margin-bottom: 0.25rem;">Custom Page <span>Designer v2</span></h1>
+          <p id="page-subtitle-display" class="page-subtitle" style="margin-bottom: 0;">Drag blocks to reorder or click/drag new components from the toolbox</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <a id="btn-view-public" href="#" target="_blank" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            View Public Page
+          </a>
+          <button id="btn-save-page" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Save Page Presentation
+          </button>
+        </div>
+      </div>
+
+      <div id="save-alert" class="form-alert" style="display: none;"></div>
+
+      <div class="editor-layout">
+        <!-- LEFT: Editor Pane -->
+        <div class="editor-pane">
+          <h2 style="color: #ffffff; font-size: 1.25rem; margin-bottom: 1rem; display:flex; align-items:center; gap:8px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.5-.74 1.5-1.5 0-.41-.16-.79-.44-1.07-.27-.28-.44-.65-.44-1.07 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.97-4.48-9-10-9z"></path></svg>
+            Page Theme & Colors
+          </h2>
+          <div class="grid-2" style="gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <label class="form-label">Background Color</label>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="color" id="bg-color-picker" value="#0c121e" style="height: 38px; width: 44px; padding: 2px; border-radius: 4px; background: none; border: 1px solid var(--border-color); cursor: pointer;">
+                <input type="text" id="bg-color-hex" class="form-input" value="#0c121e" style="font-family: monospace;">
+              </div>
+              <div class="palette-swatches">
+                <span class="color-swatch" style="background:#0c121e;" title="Obsidian Dark" data-color="#0c121e" data-target="bg"></span>
+                <span class="color-swatch" style="background:#0c1410;" title="Biohazard Mire" data-color="#0c1410" data-target="bg"></span>
+                <span class="color-swatch" style="background:#171120;" title="Ender Purple" data-color="#171120" data-target="bg"></span>
+                <span class="color-swatch" style="background:#1a0f0f;" title="Nether Crimson" data-color="#1a0f0f" data-target="bg"></span>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label">Accent Color</label>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="color" id="accent-color-picker" value="#2dd4bf" style="height: 38px; width: 44px; padding: 2px; border-radius: 4px; background: none; border: 1px solid var(--border-color); cursor: pointer;">
+                <input type="text" id="accent-color-hex" class="form-input" value="#2dd4bf" style="font-family: monospace;">
+              </div>
+              <div class="palette-swatches">
+                <span class="color-swatch" style="background:#2dd4bf;" title="Biohazard Cyan" data-color="#2dd4bf" data-target="accent"></span>
+                <span class="color-swatch" style="background:#5b8731;" title="Grass Green" data-color="#5b8731" data-target="accent"></span>
+                <span class="color-swatch" style="background:#4dedf4;" title="Diamond Cyan" data-color="#4dedf4" data-target="accent"></span>
+                <span class="color-swatch" style="background:#f5b942;" title="Gold Amber" data-color="#f5b942" data-target="accent"></span>
+              </div>
+            </div>
+          </div>
+
+          <h2 style="color: #ffffff; font-size: 1.25rem; margin-bottom: 0.25rem; display:flex; align-items:center; gap:8px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Toolbox: Add & Drag Blocks
+          </h2>
+          <div class="drag-instruction-hint">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+            Click to add or drag directly into the page list below:
+          </div>
+
+          <div class="add-block-menu">
+            <button class="btn-add-block" draggable="true" data-type="text">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <span>Text / Story</span>
+            </button>
+            <button class="btn-add-block" draggable="true" data-type="gallery">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span>Screenshots</span>
+            </button>
+            <button class="btn-add-block" draggable="true" data-type="youtube">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>YouTube Video</span>
+            </button>
+            <button class="btn-add-block" draggable="true" data-type="features">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              <span>Feature List</span>
+            </button>
+            <button class="btn-add-block" draggable="true" data-type="cube_3d">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              <span>3D Voxel Cube</span>
+            </button>
+            <button class="btn-add-block" draggable="true" data-type="download">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Download CTA</span>
+            </button>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+            <h2 style="color: #ffffff; font-size: 1.25rem; margin:0;">
+              Page Blocks (<span id="blocks-count">0</span>)
+            </h2>
+            <span style="font-size:0.8rem; color:var(--text-muted);">
+              Use drag handles to reorder
+            </span>
+          </div>
+
+          <div id="editor-blocks-container">
+            <div class="loading-spinner" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+              Loading presentation layout...
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Live Preview Pane -->
+        <div id="preview-wrapper" class="preview-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display:flex; align-items:center; gap:6px;">
+              <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              Live Page Preview
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Updates in real-time
+            </div>
+          </div>
+          <div id="preview-blocks-container"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { renderSpinningCube } from '/js/spinning-cube.js';
+    import { ICONS, getIcon } from '/js/icons.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const modpackId = params.get('id');
+
+    const editorContainer = document.getElementById('editor-blocks-container');
+    const previewContainer = document.getElementById('preview-blocks-container');
+    const previewWrapper = document.getElementById('preview-wrapper');
+    const blocksCountSpan = document.getElementById('blocks-count');
+    const saveAlert = document.getElementById('save-alert');
+    const btnSavePage = document.getElementById('btn-save-page');
+    const btnViewPublic = document.getElementById('btn-view-public');
+
+    const bgColorPicker = document.getElementById('bg-color-picker');
+    const bgColorHex = document.getElementById('bg-color-hex');
+    const accentColorPicker = document.getElementById('accent-color-picker');
+    const accentColorHex = document.getElementById('accent-color-hex');
+
+    let currentLayout = {
+      settings: {
+        backgroundColor: '#0c1410',
+        accentColor: '#2dd4bf',
+      },
+      blocks: [],
+    };
+    let currentModpack = null;
+    let cubeInstances = [];
+
+    // Drag-and-drop state variables
+    let draggedIndex = null;
+    let draggedTypeFromToolbox = null;
+
+    btnViewPublic.href = `/page.html?id=${modpackId}`;
+
+    // Color picker events
+    function updateColors() {
+      currentLayout.settings.backgroundColor = bgColorHex.value;
+      currentLayout.settings.accentColor = accentColorHex.value;
+      previewWrapper.style.backgroundColor = currentLayout.settings.backgroundColor;
+      previewWrapper.style.setProperty('--page-accent', currentLayout.settings.accentColor);
+    }
+
+    bgColorPicker.addEventListener('input', (e) => {
+      bgColorHex.value = e.target.value;
+      updateColors();
+    });
+    bgColorHex.addEventListener('input', (e) => {
+      if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(e.target.value)) {
+        bgColorPicker.value = e.target.value;
+        updateColors();
+      }
+    });
+
+    accentColorPicker.addEventListener('input', (e) => {
+      accentColorHex.value = e.target.value;
+      updateColors();
+    });
+    accentColorHex.addEventListener('input', (e) => {
+      if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(e.target.value)) {
+        accentColorPicker.value = e.target.value;
+        updateColors();
+      }
+    });
+
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        const color = swatch.dataset.color;
+        const target = swatch.dataset.target;
+        if (target === 'bg') {
+          bgColorPicker.value = color;
+          bgColorHex.value = color;
+        } else {
+          accentColorPicker.value = color;
+          accentColorHex.value = color;
+        }
+        updateColors();
+      });
+    });
+
+    // Add Block buttons (Click & Drag from Toolbox)
+    document.querySelectorAll('.btn-add-block').forEach(btn => {
+      const type = btn.dataset.type;
+
+      // Click to append at end
+      btn.addEventListener('click', () => {
+        addBlock(type);
+      });
+
+      // Drag start from toolbox
+      btn.addEventListener('dragstart', (e) => {
+        draggedTypeFromToolbox = type;
+        draggedIndex = null;
+        e.dataTransfer.effectAllowed = 'copyMove';
+        e.dataTransfer.setData('text/plain', type);
+      });
+
+      btn.addEventListener('dragend', () => {
+        draggedTypeFromToolbox = null;
+      });
+    });
+
+    function createBlockObject(type) {
+      const id = 'b_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      let newBlock = { id, type };
+
+      switch (type) {
+        case 'text':
+          newBlock.title = 'About the Modpack';
+          newBlock.subtitle = 'Survival and exploration awaits';
+          newBlock.content = 'Describe the gameplay, quests, lore, or installation instructions here.';
+          break;
+        case 'gallery':
+          newBlock.title = 'Screenshots Gallery';
+          newBlock.images = currentModpack && currentModpack.thumbnail ? [currentModpack.thumbnail] : [];
+          break;
+        case 'youtube':
+          newBlock.title = 'Modpack Trailer';
+          newBlock.url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+          newBlock.videoId = 'dQw4w9WgXcQ';
+          break;
+        case 'features':
+          newBlock.title = 'Key Features';
+          newBlock.items = [
+            { icon: 'swords', title: 'Expanded Combat', description: 'Dual wielding, custom bosses, and legendary enchantments.' },
+            { icon: 'shield', title: 'Hardcore Survival', description: 'Environmental hazards, hunger mechanics, and tactical defense.' },
+            { icon: 'sparkles', title: 'Mystic Spells', description: 'Spellcrafting mechanics with element-based runes and rituals.' },
+          ];
+          break;
+        case 'cube_3d':
+          newBlock.title = '3D Block Showcase';
+          newBlock.blockType = 'emerald';
+          newBlock.caption = 'Experience immersive voxel environments with custom mechanics.';
+          break;
+        case 'download':
+          newBlock.title = 'Download Modpack';
+          newBlock.description = 'Join thousands of adventurers playing this modpack today.';
+          break;
+      }
+      return newBlock;
+    }
+
+    function addBlock(type, insertAtIndex = null) {
+      const newBlock = createBlockObject(type);
+      if (insertAtIndex !== null && insertAtIndex >= 0 && insertAtIndex <= currentLayout.blocks.length) {
+        currentLayout.blocks.splice(insertAtIndex, 0, newBlock);
+      } else {
+        currentLayout.blocks.push(newBlock);
+      }
+      renderEditor();
+      renderLivePreview();
+    }
+
+    // Load modpack presentation
+    async function loadEditorData() {
+      // Enforce admin permission for editing
+      const user = await window.MCAuth.requireAdmin(`/page-editor.html?id=${modpackId}`);
+      if (!user) return;
+
+      try {
+        const res = await fetch(`/api/modpacks/${modpackId}/page`);
+        if (!res.ok) throw new Error('Failed to load page');
+        const data = await res.json();
+
+        if (!data.isOwner) {
+          alert('You do not have permission to edit this page presentation.');
+          window.location.href = `/modpack.html?id=${modpackId}`;
+          return;
+        }
+
+        currentModpack = data.modpack;
+        currentLayout = data.page;
+
+        document.getElementById('page-subtitle-display').textContent = `Editing presentation for: ${data.modpack.name}`;
+
+        if (currentLayout.settings) {
+          bgColorHex.value = currentLayout.settings.backgroundColor || '#0c1410';
+          bgColorPicker.value = bgColorHex.value;
+          accentColorHex.value = currentLayout.settings.accentColor || '#2dd4bf';
+          accentColorPicker.value = accentColorHex.value;
+          updateColors();
+        }
+
+        renderEditor();
+        renderLivePreview();
+      } catch (e) {
+        console.error('Editor load error:', e);
+        editorContainer.innerHTML = '<div class="form-alert form-alert-error">Failed to load modpack presentation data.</div>';
+      }
+    }
+
+    // Render Editor controls with full Drag and Drop (Phase 7)
+    function renderEditor() {
+      editorContainer.replaceChildren();
+      blocksCountSpan.textContent = currentLayout.blocks.length;
+
+      if (currentLayout.blocks.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'drag-drop-zone-placeholder';
+        empty.innerHTML = `
+          <div style="font-size:1.5rem; margin-bottom:0.5rem;">
+            ${getIcon('box', 'icon-svg-lg')}
+          </div>
+          <strong>No blocks added yet</strong>
+          <div style="font-size:0.85rem; margin-top:0.25rem;">
+            Drag blocks from the toolbox above or click any button to start building your page!
+          </div>
+        `;
+        setupDropZone(empty, 0);
+        editorContainer.appendChild(empty);
+        return;
+      }
+
+      currentLayout.blocks.forEach((block, index) => {
+        const card = document.createElement('div');
+        card.className = 'block-card-editor';
+        card.draggable = true;
+        card.dataset.index = index;
+
+        // Drag events for reordering
+        card.addEventListener('dragstart', (e) => {
+          draggedIndex = index;
+          draggedTypeFromToolbox = null;
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', index.toString());
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          draggedIndex = null;
+          document.querySelectorAll('.block-card-editor').forEach(c => c.classList.remove('drag-over'));
+        });
+
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = draggedTypeFromToolbox ? 'copy' : 'move';
+          card.classList.add('drag-over');
+        });
+
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('drag-over');
+        });
+
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          card.classList.remove('drag-over');
+
+          if (draggedTypeFromToolbox) {
+            // Dropped from toolbox: insert at target index
+            addBlock(draggedTypeFromToolbox, index);
+            draggedTypeFromToolbox = null;
+            return;
+          }
+
+          if (draggedIndex !== null && draggedIndex !== index) {
+            // Reorder existing blocks
+            const movedItem = currentLayout.blocks.splice(draggedIndex, 1)[0];
+            currentLayout.blocks.splice(index, 0, movedItem);
+            draggedIndex = null;
+            renderEditor();
+            renderLivePreview();
+          }
+        });
+
+        // Header with Drag Handle, Type badge, Order & Delete controls
+        const header = document.createElement('div');
+        header.className = 'block-card-header';
+
+        const headerLeft = document.createElement('div');
+        headerLeft.className = 'block-header-left';
+
+        // 2D Drag Handle Icon
+        const dragHandle = document.createElement('span');
+        dragHandle.className = 'drag-handle';
+        dragHandle.title = 'Drag to reorder block';
+        dragHandle.innerHTML = getIcon('dragHandle');
+        headerLeft.appendChild(dragHandle);
+
+        const badge = document.createElement('span');
+        badge.className = 'block-type-badge';
+        const typeIconName = getBlockIconName(block.type);
+        badge.innerHTML = `${getIcon(typeIconName, 'icon-svg-sm')} Block ${index + 1}: ${block.type}`;
+        headerLeft.appendChild(badge);
+
+        header.appendChild(headerLeft);
+
+        const actions = document.createElement('div');
+        actions.className = 'block-order-actions';
+
+        // Up button (2D icon)
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn-icon';
+        upBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>`;
+        upBtn.title = 'Move Up';
+        upBtn.disabled = index === 0;
+        upBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const temp = currentLayout.blocks[index];
+          currentLayout.blocks[index] = currentLayout.blocks[index - 1];
+          currentLayout.blocks[index - 1] = temp;
+          renderEditor();
+          renderLivePreview();
+        });
+        actions.appendChild(upBtn);
+
+        // Down button (2D icon)
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn-icon';
+        downBtn.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+        downBtn.title = 'Move Down';
+        downBtn.disabled = index === currentLayout.blocks.length - 1;
+        downBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const temp = currentLayout.blocks[index];
+          currentLayout.blocks[index] = currentLayout.blocks[index + 1];
+          currentLayout.blocks[index + 1] = temp;
+          renderEditor();
+          renderLivePreview();
+        });
+        actions.appendChild(downBtn);
+
+        // Delete button (2D icon)
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-icon btn-del';
+        delBtn.innerHTML = getIcon('trash', 'icon-svg-sm');
+        delBtn.title = 'Delete Block';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentLayout.blocks.splice(index, 1);
+          renderEditor();
+          renderLivePreview();
+        });
+        actions.appendChild(delBtn);
+
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        // Fields per block type
+        switch (block.type) {
+          case 'text': {
+            card.appendChild(createInputField('Title', block.title, val => { block.title = val; renderLivePreview(); }));
+            card.appendChild(createInputField('Subtitle', block.subtitle, val => { block.subtitle = val; renderLivePreview(); }));
+            card.appendChild(createTextareaField('Main Content', block.content, val => { block.content = val; renderLivePreview(); }));
+            break;
+          }
+
+          case 'gallery': {
+            card.appendChild(createInputField('Gallery Title', block.title, val => { block.title = val; renderLivePreview(); }));
+            
+            // Image upload & list
+            const imgBox = document.createElement('div');
+            imgBox.style.marginTop = '0.75rem';
+
+            const uploadLabel = document.createElement('label');
+            uploadLabel.className = 'form-label';
+            uploadLabel.textContent = 'Add Screenshots';
+            imgBox.appendChild(uploadLabel);
+
+            const uploadInput = document.createElement('input');
+            uploadInput.type = 'file';
+            uploadInput.accept = 'image/*';
+            uploadInput.className = 'form-input';
+            uploadInput.addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+
+              const formData = new FormData();
+              formData.append('image', file);
+
+              try {
+                const upRes = await fetch(`/api/modpacks/${modpackId}/page/upload-image`, {
+                  method: 'POST',
+                  body: formData,
+                });
+                const upData = await upRes.json();
+                if (upRes.ok) {
+                  block.images = block.images || [];
+                  block.images.push(upData.imageUrl);
+                  renderEditor();
+                  renderLivePreview();
+                } else {
+                  alert(upData.error || 'Failed to upload image');
+                }
+              } catch (err) {
+                console.error('Image upload error:', err);
+                alert('Upload network error');
+              }
+            });
+            imgBox.appendChild(uploadInput);
+
+            // Existing images list
+            if (block.images && block.images.length > 0) {
+              const list = document.createElement('div');
+              list.style.display = 'flex';
+              list.style.gap = '0.5rem';
+              list.style.flexWrap = 'wrap';
+              list.style.marginTop = '0.75rem';
+              block.images.forEach((imgUrl, imgIndex) => {
+                const thumb = document.createElement('div');
+                thumb.style.position = 'relative';
+                thumb.style.width = '70px';
+                thumb.style.height = '48px';
+                thumb.style.borderRadius = '4px';
+                thumb.style.overflow = 'hidden';
+                thumb.style.border = '1px solid var(--border-color)';
+
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                thumb.appendChild(img);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '2px';
+                removeBtn.style.right = '2px';
+                removeBtn.style.background = 'rgba(0,0,0,0.7)';
+                removeBtn.style.color = '#fff';
+                removeBtn.style.border = 'none';
+                removeBtn.style.borderRadius = '50%';
+                removeBtn.style.width = '18px';
+                removeBtn.style.height = '18px';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.addEventListener('click', () => {
+                  block.images.splice(imgIndex, 1);
+                  renderEditor();
+                  renderLivePreview();
+                });
+                thumb.appendChild(removeBtn);
+
+                list.appendChild(thumb);
+              });
+              imgBox.appendChild(list);
+            }
+
+            card.appendChild(imgBox);
+            break;
+          }
+
+          case 'youtube': {
+            card.appendChild(createInputField('Title', block.title, val => { block.title = val; renderLivePreview(); }));
+            card.appendChild(createInputField('YouTube Video URL', block.url, val => {
+              block.url = val;
+              const match = val.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+              if (match) {
+                block.videoId = match[1];
+              }
+              renderLivePreview();
+            }));
+            break;
+          }
+
+          case 'features': {
+            card.appendChild(createInputField('Section Title', block.title, val => { block.title = val; renderLivePreview(); }));
+            
+            const itemsContainer = document.createElement('div');
+            itemsContainer.style.marginTop = '0.75rem';
+
+            block.items.forEach((item, fIndex) => {
+              const itemRow = document.createElement('div');
+              itemRow.style.background = 'var(--bg-surface)';
+              itemRow.style.padding = '0.6rem';
+              itemRow.style.borderRadius = '4px';
+              itemRow.style.marginBottom = '0.5rem';
+              itemRow.style.border = '1px solid var(--border-color)';
+
+              const rowTop = document.createElement('div');
+              rowTop.style.display = 'flex';
+              rowTop.style.gap = '0.5rem';
+              rowTop.style.alignItems = 'center';
+
+              const iconSelect = document.createElement('select');
+              iconSelect.className = 'form-input';
+              iconSelect.style.width = '110px';
+              const iconOptions = [
+                { val: 'swords', label: 'Combat' },
+                { val: 'shield', label: 'Shield' },
+                { val: 'sparkles', label: 'Magic' },
+                { val: 'biohazard', label: 'Biohazard' },
+                { val: 'search', label: 'Search' },
+                { val: 'crown', label: 'Crown' },
+                { val: 'tools', label: 'Tools' },
+                { val: 'gamepad', label: 'Gamepad' },
+              ];
+              iconOptions.forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt.val;
+                el.textContent = opt.label;
+                if (item.icon === opt.val) el.selected = true;
+                iconSelect.appendChild(el);
+              });
+              iconSelect.addEventListener('change', e => {
+                item.icon = e.target.value;
+                renderLivePreview();
+              });
+              rowTop.appendChild(iconSelect);
+
+              const titleInput = document.createElement('input');
+              titleInput.type = 'text';
+              titleInput.value = item.title;
+              titleInput.placeholder = 'Feature title';
+              titleInput.className = 'form-input';
+              titleInput.style.flex = '1';
+              titleInput.addEventListener('input', e => { item.title = e.target.value; renderLivePreview(); });
+              rowTop.appendChild(titleInput);
+
+              const delItemBtn = document.createElement('button');
+              delItemBtn.className = 'btn-icon btn-del';
+              delItemBtn.textContent = '×';
+              delItemBtn.addEventListener('click', () => {
+                block.items.splice(fIndex, 1);
+                renderEditor();
+                renderLivePreview();
+              });
+              rowTop.appendChild(delItemBtn);
+              itemRow.appendChild(rowTop);
+
+              const descInput = document.createElement('input');
+              descInput.type = 'text';
+              descInput.value = item.description;
+              descInput.placeholder = 'Feature description';
+              descInput.className = 'form-input';
+              descInput.style.marginTop = '0.4rem';
+              descInput.addEventListener('input', e => { item.description = e.target.value; renderLivePreview(); });
+              itemRow.appendChild(descInput);
+
+              itemsContainer.appendChild(itemRow);
+            });
+
+            const addFeatureBtn = document.createElement('button');
+            addFeatureBtn.className = 'btn btn-secondary btn-sm';
+            addFeatureBtn.innerHTML = `${getIcon('plus', 'icon-svg-sm')} Add Feature Item`;
+            addFeatureBtn.style.marginTop = '0.5rem';
+            addFeatureBtn.addEventListener('click', () => {
+              block.items = block.items || [];
+              block.items.push({ icon: 'swords', title: 'New Feature', description: 'Feature description' });
+              renderEditor();
+              renderLivePreview();
+            });
+            itemsContainer.appendChild(addFeatureBtn);
+            card.appendChild(itemsContainer);
+            break;
+          }
+
+          case 'cube_3d': {
+            card.appendChild(createInputField('Title', block.title, val => { block.title = val; renderLivePreview(); }));
+
+            const selectGroup = document.createElement('div');
+            selectGroup.className = 'form-group';
+            const label = document.createElement('label');
+            label.className = 'form-label';
+            label.textContent = 'Block Material';
+            selectGroup.appendChild(label);
+
+            const select = document.createElement('select');
+            select.className = 'form-input';
+            const blocksList = ['grass', 'diamond', 'tnt', 'gold', 'redstone', 'obsidian', 'wood', 'bookshelf', 'emerald'];
+            blocksList.forEach(bName => {
+              const opt = document.createElement('option');
+              opt.value = bName;
+              opt.textContent = bName.charAt(0).toUpperCase() + bName.slice(1) + ' Block';
+              if (block.blockType === bName) opt.selected = true;
+              select.appendChild(opt);
+            });
+            select.addEventListener('change', e => {
+              block.blockType = e.target.value;
+              renderLivePreview();
+            });
+            selectGroup.appendChild(select);
+            card.appendChild(selectGroup);
+
+            card.appendChild(createInputField('Caption', block.caption, val => { block.caption = val; renderLivePreview(); }));
+            break;
+          }
+
+          case 'download': {
+            card.appendChild(createInputField('Button / Title Text', block.title, val => { block.title = val; renderLivePreview(); }));
+            card.appendChild(createInputField('Description Text', block.description, val => { block.description = val; renderLivePreview(); }));
+            break;
+          }
+        }
+
+        editorContainer.appendChild(card);
+      });
+
+      // Bottom drop-zone placeholder for dropping at the very end
+      const bottomZone = document.createElement('div');
+      bottomZone.className = 'drag-drop-zone-placeholder';
+      bottomZone.style.padding = '1.25rem';
+      bottomZone.style.margin = '0.75rem 0 0';
+      bottomZone.innerHTML = `
+        <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.85rem;">
+          ${getIcon('plus', 'icon-svg-sm')} Drag components here to place at the end of the page
+        </span>
+      `;
+      setupDropZone(bottomZone, currentLayout.blocks.length);
+      editorContainer.appendChild(bottomZone);
+    }
+
+    function setupDropZone(element, targetIndex) {
+      element.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        element.classList.add('drag-over');
+      });
+      element.addEventListener('dragleave', () => {
+        element.classList.remove('drag-over');
+      });
+      element.addEventListener('drop', (e) => {
+        e.preventDefault();
+        element.classList.remove('drag-over');
+        if (draggedTypeFromToolbox) {
+          addBlock(draggedTypeFromToolbox, targetIndex);
+          draggedTypeFromToolbox = null;
+        } else if (draggedIndex !== null) {
+          const moved = currentLayout.blocks.splice(draggedIndex, 1)[0];
+          currentLayout.blocks.push(moved);
+          draggedIndex = null;
+          renderEditor();
+          renderLivePreview();
+        }
+      });
+    }
+
+    function getBlockIconName(type) {
+      switch (type) {
+        case 'text': return 'fileText';
+        case 'gallery': return 'image';
+        case 'youtube': return 'play';
+        case 'features': return 'list';
+        case 'cube_3d': return 'box';
+        case 'download': return 'download';
+        default: return 'box';
+      }
+    }
+
+    function createInputField(labelStr, value, onChange) {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.textContent = labelStr;
+      group.appendChild(label);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-input';
+      input.value = value || '';
+      input.addEventListener('input', e => onChange(e.target.value));
+      group.appendChild(input);
+      return group;
+    }
+
+    function createTextareaField(labelStr, value, onChange) {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.textContent = labelStr;
+      group.appendChild(label);
+
+      const textarea = document.createElement('textarea');
+      textarea.className = 'form-input';
+      textarea.rows = 4;
+      textarea.value = value || '';
+      textarea.addEventListener('input', e => onChange(e.target.value));
+      group.appendChild(textarea);
+      return group;
+    }
+
+    // Render Live Preview with 2D Icons
+    function renderLivePreview() {
+      // Destroy old cubes
+      cubeInstances.forEach(c => { if (c && c.destroy) c.destroy(); });
+      cubeInstances = [];
+
+      previewContainer.replaceChildren();
+
+      currentLayout.blocks.forEach(block => {
+        const card = document.createElement('div');
+        card.className = 'live-preview-box';
+
+        switch (block.type) {
+          case 'text': {
+            if (block.title) {
+              const h2 = document.createElement('h2');
+              h2.style.fontSize = '1.6rem';
+              h2.style.color = '#ffffff';
+              h2.style.marginBottom = '0.4rem';
+              h2.textContent = block.title;
+              card.appendChild(h2);
+            }
+            if (block.subtitle) {
+              const sub = document.createElement('div');
+              sub.style.color = 'var(--page-accent, #2dd4bf)';
+              sub.style.fontWeight = '600';
+              sub.style.marginBottom = '0.75rem';
+              sub.textContent = block.subtitle;
+              card.appendChild(sub);
+            }
+            if (block.content) {
+              const p = document.createElement('div');
+              p.style.color = 'var(--text-secondary)';
+              p.style.fontSize = '0.95rem';
+              p.style.lineHeight = '1.6';
+              p.style.whiteSpace = 'pre-line';
+              p.textContent = block.content;
+              card.appendChild(p);
+            }
+            break;
+          }
+
+          case 'gallery': {
+            if (block.title) {
+              const h3 = document.createElement('h3');
+              h3.style.color = '#ffffff';
+              h3.style.marginBottom = '0.75rem';
+              h3.textContent = block.title;
+              card.appendChild(h3);
+            }
+            if (block.images && block.images.length > 0) {
+              const grid = document.createElement('div');
+              grid.style.display = 'grid';
+              grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
+              grid.style.gap = '0.6rem';
+              block.images.forEach(imgUrl => {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.style.width = '100%';
+                img.style.height = '90px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '4px';
+                grid.appendChild(img);
+              });
+              card.appendChild(grid);
+            }
+            break;
+          }
+
+          case 'youtube': {
+            if (block.title) {
+              const h3 = document.createElement('h3');
+              h3.style.color = '#ffffff';
+              h3.style.marginBottom = '0.5rem';
+              h3.textContent = block.title;
+              card.appendChild(h3);
+            }
+            if (block.videoId) {
+              const p = document.createElement('div');
+              p.style.background = '#000';
+              p.style.padding = '2rem 1rem';
+              p.style.textAlign = 'center';
+              p.style.borderRadius = '4px';
+              p.style.color = 'var(--text-secondary)';
+              p.style.display = 'flex';
+              p.style.alignItems = 'center';
+              p.style.justifyContent = 'center';
+              p.style.gap = '8px';
+              p.innerHTML = `${getIcon('play', 'icon-svg-sm')} <span>YouTube Player [Video ID: ${block.videoId}]</span>`;
+              card.appendChild(p);
+            }
+            break;
+          }
+
+          case 'features': {
+            if (block.title) {
+              const h3 = document.createElement('h3');
+              h3.style.color = '#ffffff';
+              h3.style.marginBottom = '0.75rem';
+              h3.textContent = block.title;
+              card.appendChild(h3);
+            }
+            if (block.items && block.items.length > 0) {
+              const grid = document.createElement('div');
+              grid.style.display = 'grid';
+              grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(160px, 1fr))';
+              grid.style.gap = '0.75rem';
+              block.items.forEach(item => {
+                const box = document.createElement('div');
+                box.style.background = 'var(--bg-surface-elevated)';
+                box.style.padding = '0.75rem';
+                box.style.borderRadius = '4px';
+                box.style.borderLeft = '3px solid var(--page-accent, #2dd4bf)';
+                
+                const icon = document.createElement('div');
+                icon.style.color = 'var(--page-accent, #2dd4bf)';
+                icon.style.marginBottom = '0.3rem';
+                icon.innerHTML = getIcon(item.icon || 'sparkles', 'icon-svg-sm');
+                box.appendChild(icon);
+
+                const t = document.createElement('strong');
+                t.style.color = '#ffffff';
+                t.style.display = 'block';
+                t.style.margin = '0.2rem 0';
+                t.textContent = item.title;
+                box.appendChild(t);
+
+                const d = document.createElement('div');
+                d.style.fontSize = '0.8rem';
+                d.style.color = 'var(--text-secondary)';
+                d.textContent = item.description;
+                box.appendChild(d);
+
+                grid.appendChild(box);
+              });
+              card.appendChild(grid);
+            }
+            break;
+          }
+
+          case 'cube_3d': {
+            if (block.title) {
+              const h3 = document.createElement('h3');
+              h3.style.color = '#ffffff';
+              h3.style.marginBottom = '0.4rem';
+              h3.textContent = block.title;
+              card.appendChild(h3);
+            }
+            const cubeBox = document.createElement('div');
+            cubeBox.style.width = '160px';
+            cubeBox.style.height = '160px';
+            cubeBox.style.margin = '0 auto';
+            cubeBox.style.background = 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.2) 70%)';
+            cubeBox.style.borderRadius = '6px';
+            card.appendChild(cubeBox);
+
+            if (block.caption) {
+              const cap = document.createElement('p');
+              cap.style.fontSize = '0.85rem';
+              cap.style.color = 'var(--text-secondary)';
+              cap.style.textAlign = 'center';
+              cap.style.marginTop = '0.5rem';
+              cap.textContent = block.caption;
+              card.appendChild(cap);
+            }
+
+            setTimeout(() => {
+              const instance = renderSpinningCube(cubeBox, block.blockType || 'emerald');
+              if (instance) cubeInstances.push(instance);
+            }, 10);
+            break;
+          }
+
+          case 'download': {
+            const dlBox = document.createElement('div');
+            dlBox.style.textAlign = 'center';
+            dlBox.style.padding = '1rem';
+
+            const dlTitle = document.createElement('h3');
+            dlTitle.style.color = '#ffffff';
+            dlTitle.style.marginBottom = '0.4rem';
+            dlTitle.textContent = block.title || 'Download Modpack';
+            dlBox.appendChild(dlTitle);
+
+            const dlDesc = document.createElement('p');
+            dlDesc.style.fontSize = '0.85rem';
+            dlDesc.style.color = 'var(--text-secondary)';
+            dlDesc.style.marginBottom = '1rem';
+            dlDesc.textContent = block.description || 'Download via MCIntroduce';
+            dlBox.appendChild(dlDesc);
+
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-primary btn-sm';
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.gap = '6px';
+            btn.innerHTML = `${getIcon('download', 'icon-svg-sm')} Download Modpack`;
+            dlBox.appendChild(btn);
+
+            card.appendChild(dlBox);
+            break;
+          }
+        }
+
+        previewContainer.appendChild(card);
+      });
+    }
+
+    // Save Page Layout to Server
+    btnSavePage.addEventListener('click', async () => {
+      btnSavePage.disabled = true;
+      btnSavePage.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Saving...`;
+      saveAlert.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/modpacks/${modpackId}/page`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentLayout),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          saveAlert.className = 'form-alert form-alert-success';
+          saveAlert.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;">${getIcon('check', 'icon-svg-sm')} Presentation page saved successfully!</span>`;
+          saveAlert.style.display = 'block';
+          setTimeout(() => { saveAlert.style.display = 'none'; }, 4000);
+        } else {
+          saveAlert.className = 'form-alert form-alert-error';
+          saveAlert.textContent = data.error || 'Failed to save page presentation';
+          saveAlert.style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Save error:', err);
+        saveAlert.className = 'form-alert form-alert-error';
+        saveAlert.textContent = 'A network error occurred while saving.';
+        saveAlert.style.display = 'block';
+      } finally {
+        btnSavePage.disabled = false;
+        btnSavePage.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Page Presentation`;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEditorData();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doki's Modpacks - Minecraft 2: Biohazard</title>
+  <meta name="description" content="Browse and download Doki's official Minecraft modpacks, featuring Minecraft 2: Biohazard.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+  <style>
+    .search-filter-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.85rem 1rem 0.85rem 2.75rem;
+      background-color: var(--bg-surface);
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .filter-tags {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tag-btn {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.9rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tag-btn:hover, .tag-btn.active {
+      background-color: var(--bg-surface-elevated);
+      color: var(--accent-green-light);
+      border-color: var(--accent-green);
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      background-color: var(--bg-surface);
+      border: 2px dashed var(--border-color);
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state h3 {
+      font-size: 1.3rem;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link active">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-container">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+        <div>
+          <div class="phase-badge">DOKI'S MODPACK DIRECTORY</div>
+          <h1 class="page-title">Doki's <span>Modpacks</span></h1>
+          <p class="page-subtitle">Featuring the official release of <strong>Minecraft 2: Biohazard</strong> by doki</p>
+        </div>
+        <div>
+          <a href="/modpack-create.html" class="btn btn-primary" id="publish-btn" style="display: none; align-items: center; gap: 6px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"></path></svg>
+            Upload Modpack
+          </a>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="search-filter-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon" style="display:flex; align-items:center;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          <input
+            type="text"
+            id="search-input"
+            class="search-input"
+            placeholder="Search modpacks by name, description, or keyword..."
+            aria-label="Search modpacks"
+          >
+        </div>
+        <div class="filter-tags" id="tag-filters">
+          <button class="tag-btn active" data-tag="All" data-type="tag">All</button>
+          <button class="tag-btn" data-status="released" data-type="status" style="display:inline-flex; align-items:center; gap:4px; color:#2dd4bf;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Released
+          </button>
+          <button class="tag-btn" data-status="demo" data-type="status" style="display:inline-flex; align-items:center; gap:4px; color:#ecc94b;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8 4.8 1.9-4.8 1.9L12 16.5l-1.9-4.9-4.8-1.9 4.8-1.9L12 3z"></path></svg>
+            Demo
+          </button>
+          <button class="tag-btn" data-status="coming_soon" data-type="status" style="display:inline-flex; align-items:center; gap:4px; color:#b794f4;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Coming Soon
+          </button>
+          <button class="tag-btn" data-tag="Biohazard" data-type="tag" style="display:inline-flex; align-items:center; gap:4px;">
+            <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg>
+            Biohazard
+          </button>
+          <button class="tag-btn" data-tag="Survival" data-type="tag">Survival</button>
+          <button class="tag-btn" data-tag="Adventure" data-type="tag">Adventure</button>
+          <button class="tag-btn" data-tag="Tech" data-type="tag">Tech</button>
+          <button class="tag-btn" data-tag="Magic" data-type="tag">Magic</button>
+        </div>
+      </div>
+
+      <!-- Modpacks Grid -->
+      <div id="modpacks-container">
+        <div class="loading-spinner">Loading modpacks...</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+        <a href="/login.html">Log In</a>
+        <a href="/register.html">Register</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let activeTag = 'All';
+    let activeStatus = 'All';
+    let searchQuery = '';
+    let debounceTimer = null;
+
+    const container = document.getElementById('modpacks-container');
+    const searchInput = document.getElementById('search-input');
+    const filterButtons = document.querySelectorAll('#tag-filters .tag-btn');
+
+    async function loadModpacks() {
+      container.replaceChildren();
+      const spinner = document.createElement('div');
+      spinner.className = 'loading-spinner';
+      spinner.textContent = 'Loading modpacks...';
+      container.appendChild(spinner);
+
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery) params.append('search', searchQuery);
+        if (activeTag && activeTag !== 'All') params.append('tag', activeTag);
+        if (activeStatus && activeStatus !== 'All') params.append('status', activeStatus);
+
+        const res = await fetch(`/api/modpacks?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed to fetch modpacks');
+        const data = await res.json();
+
+        container.replaceChildren();
+
+        if (!data.modpacks || data.modpacks.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+
+          const title = document.createElement('h3');
+          title.textContent = 'No modpacks found';
+          empty.appendChild(title);
+
+          const msg = document.createElement('p');
+          msg.textContent = searchQuery || activeTag !== 'All' || activeStatus !== 'All'
+            ? 'Try adjusting your search keywords or status/category filters.' 
+            : 'Be the very first creator to publish a modpack!';
+          empty.appendChild(msg);
+
+          const btn = document.createElement('a');
+          btn.href = '/modpack-create.html';
+          btn.className = 'btn btn-primary';
+          btn.style.marginTop = '1.25rem';
+          btn.textContent = '+ Publish First Modpack';
+          empty.appendChild(btn);
+
+          container.appendChild(empty);
+          return;
+        }
+
+        const grid = document.createElement('div');
+        grid.className = 'modpack-grid';
+
+        data.modpacks.forEach(pack => {
+          const card = document.createElement('div');
+          card.className = 'modpack-card';
+
+          // Thumbnail or blocky placeholder
+          const thumbWrapper = document.createElement('div');
+          thumbWrapper.className = 'modpack-thumb';
+
+          if (pack.thumbnail) {
+            const img = document.createElement('img');
+            img.src = pack.thumbnail;
+            img.alt = pack.name;
+            img.onerror = () => {
+              img.onerror = null;
+              img.src = '/uploads/panorama_5.png';
+            };
+            thumbWrapper.appendChild(img);
+          } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'modpack-thumb-placeholder';
+            const cube = document.createElement('span');
+            cube.className = 'cube-icon';
+            const cubeText = document.createElement('span');
+            cubeText.textContent = 'MODPACK';
+            placeholder.appendChild(cube);
+            placeholder.appendChild(cubeText);
+            thumbWrapper.appendChild(placeholder);
+          }
+
+          // Top right access badge (Open vs Approval)
+          const badge = document.createElement('span');
+          badge.className = `modpack-badge ${pack.download_mode === 'open' ? 'badge-open' : 'badge-approval'}`;
+          badge.textContent = pack.download_mode === 'open' ? 'Open Download' : 'Approval Required';
+          thumbWrapper.appendChild(badge);
+          card.appendChild(thumbWrapper);
+
+          // Body
+          const body = document.createElement('div');
+          body.className = 'modpack-body';
+
+          // Release Status Banner in Card
+          const statusRow = document.createElement('div');
+          statusRow.style.display = 'flex';
+          statusRow.style.alignItems = 'center';
+          statusRow.style.gap = '0.5rem';
+          statusRow.style.flexWrap = 'wrap';
+          statusRow.style.marginBottom = '0.5rem';
+
+          const relStatus = pack.release_status || 'released';
+          const statusBadge = document.createElement('span');
+          if (relStatus === 'demo') {
+            statusBadge.className = 'badge-status badge-status-demo';
+            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8 4.8 1.9-4.8 1.9L12 16.5l-1.9-4.9-4.8-1.9 4.8-1.9L12 3z"></path></svg> Demo`;
+          } else if (relStatus === 'coming_soon') {
+            statusBadge.className = 'badge-status badge-status-coming-soon';
+            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Coming Soon`;
+          } else {
+            statusBadge.className = 'badge-status badge-status-released';
+            statusBadge.innerHTML = `<svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Released`;
+          }
+          statusRow.appendChild(statusBadge);
+
+          if (pack.release_date && (relStatus === 'demo' || relStatus === 'coming_soon')) {
+            const relDatePill = document.createElement('span');
+            relDatePill.className = 'release-date-pill';
+            relDatePill.textContent = pack.release_date;
+            statusRow.appendChild(relDatePill);
+          }
+          body.appendChild(statusRow);
+
+          const title = document.createElement('h3');
+          title.className = 'modpack-title';
+          // Strictly textContent
+          title.textContent = pack.name;
+          body.appendChild(title);
+
+          const author = document.createElement('div');
+          author.className = 'modpack-author';
+          author.textContent = 'By ';
+          const strongAuthor = document.createElement('strong');
+          // Strictly textContent
+          strongAuthor.textContent = pack.owner_username || 'Unknown';
+          author.appendChild(strongAuthor);
+          body.appendChild(author);
+
+          const desc = document.createElement('p');
+          desc.className = 'modpack-desc';
+          // Strictly textContent
+          desc.textContent = pack.short_description;
+          body.appendChild(desc);
+
+          // Tags
+          if (pack.tags) {
+            const tagContainer = document.createElement('div');
+            tagContainer.className = 'modpack-tags';
+            const tags = pack.tags.split(',').filter(t => t.trim().length > 0);
+            tags.forEach(t => {
+              const tagSpan = document.createElement('span');
+              tagSpan.className = 'modpack-tag';
+              tagSpan.textContent = t.trim();
+              tagContainer.appendChild(tagSpan);
+            });
+            body.appendChild(tagContainer);
+          }
+
+          // Footer
+          const footer = document.createElement('div');
+          footer.className = 'modpack-footer';
+
+          const dateSpan = document.createElement('span');
+          const date = new Date(pack.created_at);
+          dateSpan.textContent = isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+          footer.appendChild(dateSpan);
+
+          const viewBtn = document.createElement('a');
+          viewBtn.href = `/modpack.html?id=${pack.id}`;
+          viewBtn.className = 'btn btn-secondary btn-sm';
+          viewBtn.textContent = 'View Modpack';
+          footer.appendChild(viewBtn);
+
+          body.appendChild(footer);
+          card.appendChild(body);
+          grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+      } catch (err) {
+        console.error('Error rendering modpacks:', err);
+        container.replaceChildren();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'empty-state';
+        const title = document.createElement('h3');
+        title.textContent = 'Failed to load modpacks';
+        const msg = document.createElement('p');
+        msg.textContent = 'Please check your connection and refresh the page.';
+        errDiv.appendChild(title);
+        errDiv.appendChild(msg);
+        container.appendChild(errDiv);
+      }
+    }
+
+    // Filter button handlers
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const type = btn.dataset.type;
+        if (type === 'status') {
+          activeStatus = btn.dataset.status;
+          activeTag = 'All';
+        } else {
+          activeTag = btn.dataset.tag || 'All';
+          activeStatus = 'All';
+        }
+        loadModpacks();
+      });
+    });
+
+    // Search input handler with debounce
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        searchQuery = e.target.value.trim();
+        debounceTimer = setTimeout(loadModpacks, 250);
+      });
+    }
+
+    // Initial load
+    async function initPage() {
+      loadModpacks();
+      try {
+        if (window.MCAuth && window.MCAuth.getCurrentUser) {
+          const auth = await window.MCAuth.getCurrentUser();
+          const publishBtn = document.getElementById('publish-btn');
+          if (publishBtn && auth.loggedIn && auth.user && auth.user.role === 'admin') {
+            publishBtn.style.display = 'inline-block';
+          }
+        }
+      } catch (e) {
+        console.warn('Auth check error:', e);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initPage);
+    } else {
+      initPage();
+    }
+  </script>
+</body>
+</html>

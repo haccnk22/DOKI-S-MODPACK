@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Downloads - Doki's Modpacks</title>
+  <meta name="description" content="View your requested modpacks and download status on MCIntroduce.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+  <style>
+    .download-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .download-card:hover {
+      border-color: var(--border-highlight);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .download-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .download-card-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 4px;
+      background-color: var(--bg-surface-elevated);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .download-card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .download-modpack-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 0.25rem;
+    }
+
+    .download-modpack-title:hover {
+      color: var(--accent-green-light);
+    }
+
+    .download-meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .download-meta strong {
+      color: var(--accent-green-light);
+    }
+
+    .download-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 0.35rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background-color: rgba(221, 107, 32, 0.2);
+      border: 1px solid #dd6b20;
+      color: #f6ad55;
+    }
+
+    .status-approved {
+      background-color: rgba(56, 161, 105, 0.2);
+      border: 1px solid #38a169;
+      color: #68d391;
+    }
+
+    .status-rejected {
+      background-color: rgba(229, 62, 62, 0.2);
+      border: 1px solid #e53e3e;
+      color: #fc8181;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-container">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+        <div>
+          <div class="phase-badge">DOWNLOAD ACCESS VAULT</div>
+          <h1 class="page-title">My <span>Downloads</span></h1>
+          <p class="page-subtitle">Track your approval requests and download unlocked modpacks</p>
+        </div>
+        <div>
+          <a href="/modpacks.html" class="btn btn-secondary">
+            Browse More Modpacks
+          </a>
+        </div>
+      </div>
+
+      <div id="downloads-container">
+        <div class="loading-spinner" style="text-align: center; padding: 4rem; color: var(--text-muted); font-family: monospace;">
+          Loading your downloads...
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+        <a href="/my-downloads.html">My Downloads</a>
+        <a href="/dashboard.html">Dashboard</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const container = document.getElementById('downloads-container');
+
+    async function checkAuth() {
+      try {
+        const user = await window.MCAuth.requireLogin('/my-downloads.html');
+        return !!user;
+      } catch (e) {
+        console.error('Auth error:', e);
+        return false;
+      }
+    }
+
+    async function loadMyDownloads() {
+      container.replaceChildren();
+      const spinner = document.createElement('div');
+      spinner.className = 'loading-spinner';
+      spinner.textContent = 'Loading your downloads...';
+      container.appendChild(spinner);
+
+      try {
+        const res = await fetch('/api/dashboard/my-downloads');
+        if (!res.ok) throw new Error('Failed to load downloads');
+        const data = await res.json();
+
+        container.replaceChildren();
+
+        if (!data.downloads || data.downloads.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          const h3 = document.createElement('h3');
+          h3.textContent = 'No download requests yet';
+          const p = document.createElement('p');
+          p.textContent = 'When you request access to an approval-mode modpack, its status and download link will appear here.';
+          const btn = document.createElement('a');
+          btn.href = '/modpacks.html';
+          btn.className = 'btn btn-primary';
+          btn.style.marginTop = '1.25rem';
+          btn.textContent = 'Browse Modpacks';
+          empty.appendChild(h3);
+          empty.appendChild(p);
+          empty.appendChild(btn);
+          container.appendChild(empty);
+          return;
+        }
+
+        data.downloads.forEach(dl => {
+          const card = document.createElement('div');
+          card.className = 'download-card';
+
+          const left = document.createElement('div');
+          left.className = 'download-left';
+
+          const thumb = document.createElement('div');
+          thumb.className = 'download-card-thumb';
+          if (dl.modpack_thumbnail) {
+            const img = document.createElement('img');
+            img.src = dl.modpack_thumbnail;
+            img.alt = dl.modpack_name;
+            thumb.appendChild(img);
+          } else {
+            const cube = document.createElement('span');
+            cube.className = 'logo-cube';
+            thumb.appendChild(cube);
+          }
+          left.appendChild(thumb);
+
+          const metaContainer = document.createElement('div');
+          const title = document.createElement('a');
+          title.href = `/modpack.html?id=${dl.modpack_id}`;
+          title.className = 'download-modpack-title';
+          // Strictly textContent
+          title.textContent = dl.modpack_name;
+          metaContainer.appendChild(title);
+
+          const meta = document.createElement('div');
+          meta.className = 'download-meta';
+          meta.textContent = 'Creator: ';
+          const strongAuthor = document.createElement('strong');
+          strongAuthor.textContent = dl.owner_username;
+          meta.appendChild(strongAuthor);
+
+          const date = new Date(dl.created_at);
+          const dateSpan = document.createElement('span');
+          dateSpan.style.marginLeft = '0.75rem';
+          dateSpan.textContent = `• Requested: ${isNaN(date.getTime()) ? '' : date.toLocaleDateString()}`;
+          meta.appendChild(dateSpan);
+          metaContainer.appendChild(meta);
+
+          left.appendChild(metaContainer);
+          card.appendChild(left);
+
+          // Right: Status Badge & Download / Re-request Button
+          const right = document.createElement('div');
+          right.className = 'download-right';
+
+          const badge = document.createElement('span');
+          badge.className = `badge-status status-${dl.status}`;
+          badge.textContent = dl.status === 'pending' ? 'Pending Approval' : dl.status === 'approved' ? 'Approved' : 'Rejected';
+          right.appendChild(badge);
+
+          if (dl.status === 'approved') {
+            const dlBtn = document.createElement('a');
+            dlBtn.href = window.MCAuth.getDownloadUrl(dl.modpack_id);
+            dlBtn.className = 'btn btn-primary btn-sm';
+            dlBtn.textContent = 'Download Now';
+            right.appendChild(dlBtn);
+          } else if (dl.status === 'rejected') {
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'btn btn-secondary btn-sm';
+            retryBtn.textContent = 'Re-request';
+            retryBtn.addEventListener('click', async () => {
+              retryBtn.disabled = true;
+              retryBtn.textContent = 'Requesting...';
+              try {
+                const reqRes = await fetch(`/api/modpacks/${dl.modpack_id}/request-download`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                });
+                if (reqRes.ok) {
+                  loadMyDownloads();
+                } else {
+                  const reqData = await reqRes.json();
+                  alert(reqData.error || 'Failed to re-submit request');
+                  retryBtn.disabled = false;
+                  retryBtn.textContent = 'Re-request';
+                }
+              } catch (e) {
+                console.error('Re-request error:', e);
+                retryBtn.disabled = false;
+                retryBtn.textContent = 'Re-request';
+              }
+            });
+            right.appendChild(retryBtn);
+          }
+
+          card.appendChild(right);
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('My downloads load error:', err);
+        container.replaceChildren();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'empty-state';
+        const h3 = document.createElement('h3');
+        h3.textContent = 'Error loading downloads';
+        const p = document.createElement('p');
+        p.textContent = 'Please check your connection and refresh the page.';
+        errDiv.appendChild(h3);
+        errDiv.appendChild(p);
+        container.appendChild(errDiv);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await checkAuth();
+      if (ok) {
+        loadMyDownloads();
+      }
+    });
+  </script>
+</body>
+</html>

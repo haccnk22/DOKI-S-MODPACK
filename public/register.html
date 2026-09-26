@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Doki's Modpacks</title>
+  <meta name="description" content="Create an account to review and download Doki's Minecraft modpacks.">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="nav-brand-group">
+        <a href="/" class="logo">
+          <span class="logo-cube"></span>
+          <span>DOKI'S MODPACKS</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/modpacks.html" class="nav-link">Modpacks</a>
+          <a href="/about-minecraft.html" class="nav-link">About Minecraft</a>
+          <a href="/about-website.html" class="nav-link">About Website</a>
+        </nav>
+      </div>
+      <div id="nav-actions" class="nav-actions"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1 class="auth-title">Create Account</h1>
+          <p class="auth-subtitle">Join MCIntroduce to publish and explore modpacks</p>
+        </div>
+
+        <div id="register-alert" class="form-alert form-alert-error" role="alert"></div>
+
+        <form id="register-form" novalidate>
+          <div class="form-group">
+            <label for="username" class="form-label">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-input"
+              autocomplete="username"
+              placeholder="3-20 characters (letters, numbers, _)"
+              required
+              autofocus
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              autocomplete="new-password"
+              placeholder="At least 6 characters"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="confirm-password" class="form-label">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm-password"
+              name="confirm-password"
+              class="form-input"
+              autocomplete="new-password"
+              placeholder="Re-type password"
+              required
+            >
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-block">
+            Create Account
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          Already have an account? <a href="/login.html">Log in here</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <nav class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/modpacks.html">Modpacks</a>
+        <a href="/about-minecraft.html">About Minecraft</a>
+        <a href="/about-website.html">About Website</a>
+        <a href="/login.html">Log In</a>
+        <a href="/register.html">Register</a>
+      </nav>
+      <div class="disclaimer">
+        Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const form = document.getElementById('register-form');
+    const alertBox = document.getElementById('register-alert');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+      alertBox.textContent = '';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (!username) {
+        alertBox.textContent = 'Please enter a username.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (username.length < 3 || username.length > 20) {
+        alertBox.textContent = 'Username must be between 3 and 20 characters.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        alertBox.textContent = 'Username can only contain letters, numbers, underscores, and dashes.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        alertBox.textContent = 'Password must be at least 6 characters long.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alertBox.textContent = 'Passwords do not match.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating account...';
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Use textContent to safely render server error message
+          alertBox.textContent = data.error || 'Failed to create account. Please try again.';
+          alertBox.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Account';
+          return;
+        }
+
+        // On successful registration, save token and user for iframe compatibility and redirect
+        if (data.token) {
+          localStorage.setItem('mc_auth_token', data.token);
+        }
+        if (data.user) {
+          localStorage.setItem('mc_user', JSON.stringify(data.user));
+        }
+        window.location.href = '/';
+      } catch (err) {
+        console.error('Registration submit error:', err);
+        alertBox.textContent = 'A network error occurred. Please try again.';
+        alertBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

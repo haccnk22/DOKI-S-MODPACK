@@ -1,0 +1,8 @@
+{
+  "name": "Remix MCIntroduce - Minecraft \u0026 Modpacks Hub",
+  "description": "An interactive Minecraft introduction and customizable modpack showcase platform with 3D voxel world, custom page designer, and download management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
