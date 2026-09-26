@@ -152,7 +152,7 @@ try {
 • Return to The End: Gather purified catalyst stones from the deepest withered bastions to rekindle the fractured End Portal and face the final truth.`;
 
     const downloadLink = 'https://drive.google.com/drive/folders/1AiHaMZaoQpv7LcKi2rF-erqG4ymZiCN6';
-    const thumbnail = '/uploads/panorama_5.png';
+    const thumbnail = null;
     const packResult = insertPack.run(
       doki.id,
       'Minecraft 2: Biohazard',
@@ -185,7 +185,7 @@ try {
           id: 'b_bio_2',
           type: 'gallery',
           title: 'Official Modpack Artwork & Screenshots',
-          images: ['/uploads/panorama_5.png'],
+          images: [],
         },
         {
           id: 'b_bio_3',

@@ -264,7 +264,7 @@
             img.alt = pack.name;
             img.onerror = () => {
               img.onerror = null;
-              img.src = '/uploads/panorama_5.png';
+              img.style.display = 'none';
             };
             thumbWrapper.appendChild(img);
           } else {
