@@ -242,6 +242,104 @@ try {
     }
   }
 
+const snapshotFile = path.join(dataDir, 'db_snapshot.json');
+
+function saveSnapshot() {
+  try {
+    const users = db.prepare('SELECT * FROM users').all();
+    const modpacks = db.prepare('SELECT * FROM modpacks').all();
+    const download_requests = db.prepare('SELECT * FROM download_requests').all();
+    const modpack_pages = db.prepare('SELECT * FROM modpack_pages').all();
+
+    const snapshot = { users, modpacks, download_requests, modpack_pages, timestamp: Date.now() };
+    fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
+
+    // Also save a fallback copy in rootDir/data if writable
+    const localSnapshot = path.join(rootDir, 'data', 'db_snapshot.json');
+    if (localSnapshot !== snapshotFile) {
+      try {
+        const dir = path.dirname(localSnapshot);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(localSnapshot, JSON.stringify(snapshot, null, 2), 'utf8');
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn('Failed to save DB snapshot:', err.message);
+  }
+}
+
+function restoreSnapshot() {
+  try {
+    let fileToLoad = snapshotFile;
+    const localSnapshot = path.join(rootDir, 'data', 'db_snapshot.json');
+    if (!fs.existsSync(fileToLoad) && fs.existsSync(localSnapshot)) {
+      fileToLoad = localSnapshot;
+    }
+    if (!fs.existsSync(fileToLoad)) return;
+
+    const content = fs.readFileSync(fileToLoad, 'utf8');
+    const snapshot = JSON.parse(content);
+
+    if (Array.isArray(snapshot.users)) {
+      for (const u of snapshot.users) {
+        const existing = db.prepare('SELECT id FROM users WHERE id = ? OR username = ? COLLATE NOCASE').get(u.id, u.username);
+        if (!existing) {
+          db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)')
+            .run(u.id, u.username, u.password_hash, u.role || 'user', u.created_at || new Date().toISOString());
+        }
+      }
+    }
+
+    if (Array.isArray(snapshot.modpacks)) {
+      for (const p of snapshot.modpacks) {
+        const existing = db.prepare('SELECT id FROM modpacks WHERE id = ?').get(p.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT OR REPLACE INTO modpacks (
+              id, owner_id, name, short_description, long_description, thumbnail,
+              external_download_link, download_mode, release_status, release_date, tags, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            p.id, p.owner_id, p.name, p.short_description, p.long_description, p.thumbnail,
+            p.external_download_link, p.download_mode, p.release_status || 'released', p.release_date || null,
+            p.tags || '', p.created_at || new Date().toISOString()
+          );
+        } else if (p.thumbnail && p.thumbnail.startsWith('data:')) {
+          db.prepare('UPDATE modpacks SET thumbnail = ? WHERE id = ?').run(p.thumbnail, p.id);
+        }
+      }
+    }
+
+    if (Array.isArray(snapshot.download_requests)) {
+      for (const r of snapshot.download_requests) {
+        const existing = db.prepare('SELECT id FROM download_requests WHERE id = ?').get(r.id);
+        if (!existing) {
+          db.prepare('INSERT OR REPLACE INTO download_requests (id, modpack_id, requester_id, status, created_at) VALUES (?, ?, ?, ?, ?)')
+            .run(r.id, r.modpack_id, r.requester_id, r.status, r.created_at || new Date().toISOString());
+        }
+      }
+    }
+
+    if (Array.isArray(snapshot.modpack_pages)) {
+      for (const pg of snapshot.modpack_pages) {
+        const existing = db.prepare('SELECT id FROM modpack_pages WHERE id = ?').get(pg.id);
+        if (!existing) {
+          db.prepare('INSERT OR REPLACE INTO modpack_pages (id, modpack_id, layout_json, updated_at) VALUES (?, ?, ?, ?)')
+            .run(pg.id, pg.modpack_id, pg.layout_json, pg.updated_at || new Date().toISOString());
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to restore DB snapshot:', err.message);
+  }
+}
+
+db.saveSnapshot = saveSnapshot;
+db.restoreSnapshot = restoreSnapshot;
+
+// Restore snapshot if available on start
+restoreSnapshot();
+
 } catch (seedErr) {
   console.error('Seeding error:', seedErr);
 }

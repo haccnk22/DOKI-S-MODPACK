@@ -87,6 +87,8 @@ router.post('/register', async (req, res) => {
     const result = insertStmt.run(cleanUsername, passwordHash, 'user');
     const userId = Number(result.lastInsertRowid);
 
+    if (db.saveSnapshot) db.saveSnapshot();
+
     // Set session data
     req.session.userId = userId;
     req.session.username = cleanUsername;

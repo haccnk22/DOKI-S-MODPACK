@@ -325,6 +325,7 @@ router.post('/', requireAdmin, (req, res) => {
       );
 
       const modpackId = Number(result.lastInsertRowid);
+      if (db.saveSnapshot) db.saveSnapshot();
 
       return res.status(201).json({
         success: true,
@@ -463,6 +464,8 @@ router.put('/:id', requireAdmin, (req, res) => {
         cleanTags,
         id
       );
+
+      if (db.saveSnapshot) db.saveSnapshot();
 
       return res.json({
         success: true,
@@ -645,6 +648,7 @@ router.post('/:id/request-download', requireAuth, (req, res) => {
         WHERE id = ?
       `);
       updateStmt.run(existing.id);
+      if (db.saveSnapshot) db.saveSnapshot();
 
       return res.json({
         success: true,
@@ -659,6 +663,7 @@ router.post('/:id/request-download', requireAuth, (req, res) => {
       VALUES (?, ?, 'pending')
     `);
     insertStmt.run(id, userId);
+    if (db.saveSnapshot) db.saveSnapshot();
 
     return res.status(201).json({
       success: true,

@@ -325,6 +325,7 @@ router.put('/', requireAuth, (req, res) => {
         updated_at = CURRENT_TIMESTAMP
     `);
     upsertStmt.run(modpackId, layoutJson);
+    if (db.saveSnapshot) db.saveSnapshot();
 
     return res.json({
       success: true,

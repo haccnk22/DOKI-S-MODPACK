@@ -53,18 +53,36 @@
     async getCurrentUser() {
       try {
         const token = this.getToken();
+        const cachedUser = this.getUser();
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch('/api/auth/me', { headers });
-        if (!res.ok) return { loggedIn: false, user: null };
-        const data = await res.json();
-        if (data.loggedIn && data.user) {
-          this.setAuth(null, data.user);
-          return data;
-        } else {
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.loggedIn && data.user) {
+            this.setAuth(token, data.user);
+            return data;
+          }
+        }
+
+        // Only clear auth if server explicitly returned 401 Unauthorized
+        if (res.status === 401) {
           this.clearAuth();
           return { loggedIn: false, user: null };
         }
+
+        // Network error or 50x server restart: soft fallback to cached user if token exists
+        if (token && cachedUser) {
+          return { loggedIn: true, user: cachedUser, isCached: true };
+        }
+
+        return { loggedIn: false, user: null };
       } catch (e) {
+        const token = this.getToken();
+        const cachedUser = this.getUser();
+        if (token && cachedUser) {
+          return { loggedIn: true, user: cachedUser, isCached: true };
+        }
         return { loggedIn: false, user: null };
       }
     },

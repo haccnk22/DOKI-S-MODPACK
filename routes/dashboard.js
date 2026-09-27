@@ -99,6 +99,7 @@ router.post('/requests/:id/action', requireAuth, (req, res) => {
       WHERE id = ?
     `);
     updateStmt.run(action, requestId);
+    if (db.saveSnapshot) db.saveSnapshot();
 
     return res.json({
       success: true,

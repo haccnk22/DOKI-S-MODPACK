@@ -41,6 +41,25 @@ function renderLoggedOut(navActions) {
 }
 
 async function initNavbar() {
+  // Setup Mobile Hamburger Menu
+  const navContainer = document.querySelector('.nav-container');
+  if (navContainer && !document.getElementById('mobile-menu-toggle')) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'mobile-menu-toggle';
+    toggleBtn.className = 'mobile-menu-toggle';
+    toggleBtn.setAttribute('aria-label', 'Toggle Navigation');
+    toggleBtn.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`;
+
+    toggleBtn.addEventListener('click', () => {
+      navContainer.classList.toggle('mobile-menu-open');
+    });
+
+    const brandGroup = navContainer.querySelector('.nav-brand-group') || navContainer.firstElementChild;
+    if (brandGroup) {
+      brandGroup.appendChild(toggleBtn);
+    }
+  }
+
   // Highlight current active link in navigation
   const currentPath = window.location.pathname;
   const navLinks = document.querySelectorAll('.nav-links .nav-link');
