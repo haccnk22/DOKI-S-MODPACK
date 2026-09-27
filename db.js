@@ -2,7 +2,6 @@ import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import bcrypt from 'bcryptjs';
 import { dataDir, isServerless, rootDir } from './paths.js';
 
 // Safe determination of writable SQLite database path
@@ -14,9 +13,11 @@ try {
     fs.mkdirSync(dir, { recursive: true });
   }
 } catch (err) {
+  // If dataDir cannot be written (e.g. read-only filesystem), fallback directly to os.tmpdir()
   dbPath = path.join(os.tmpdir(), 'mcintroduce.db');
 }
 
+// If running in serverless environment and a pre-seeded local db exists, copy it to the writable location
 if (isServerless) {
   const localDbPath = path.join(rootDir, 'data', 'mcintroduce.db');
   if (!fs.existsSync(dbPath) && fs.existsSync(localDbPath)) {
@@ -28,24 +29,23 @@ if (isServerless) {
   }
 }
 
-// Initialize SQLite database using Node's built-in node:sqlite synchronously
+// Initialize SQLite database using Node's built-in node:sqlite
 const db = new DatabaseSync(dbPath);
+
+// Enable foreign keys and WAL mode for reliability and performance
 db.exec('PRAGMA foreign_keys = ON;');
 
-// Create users table
+// Create users table for Phase 1
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL COLLATE NOCASE,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'user',
-    email TEXT DEFAULT '',
-    bio TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
-// Create modpacks table
+// Create modpacks table for Phase 3
 db.exec(`
   CREATE TABLE IF NOT EXISTS modpacks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,24 +66,19 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_modpacks_created ON modpacks(created_at DESC);
 `);
 
-// Migration: Ensure columns exist
+// Migration: Ensure 'release_status' and 'release_date' columns exist in modpacks table
 try {
   db.exec("ALTER TABLE modpacks ADD COLUMN release_status TEXT DEFAULT 'released' CHECK(release_status IN ('released', 'demo', 'coming_soon'));");
-} catch (e) {}
+} catch (e) {
+  // Column already exists
+}
 try {
   db.exec("ALTER TABLE modpacks ADD COLUMN release_date TEXT DEFAULT NULL;");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user';");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE users ADD COLUMN email TEXT DEFAULT '';");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT '';");
-} catch (e) {}
+} catch (e) {
+  // Column already exists
+}
 
-// Create download_requests table
+// Create download_requests table for Phase 4
 db.exec(`
   CREATE TABLE IF NOT EXISTS download_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,42 +93,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_requests_requester ON download_requests(requester_id);
 `);
 
-// Create modpack_pages table for presentations
-db.exec(`
-  CREATE TABLE IF NOT EXISTS modpack_pages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    modpack_id INTEGER UNIQUE NOT NULL REFERENCES modpacks(id) ON DELETE CASCADE,
-    layout_json TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
-// Create site_settings table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS site_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-`);
-
-// Create events table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    thumbnail TEXT,
-    event_date TEXT NOT NULL,
-    prize TEXT,
-    link_url TEXT,
-    description TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date DESC);
-`);
-
-// Export default SVG fallback thumbnail
+// Export default SVG fallback thumbnail for modpacks
 export const DEFAULT_THUMBNAIL_SVG = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22800%22%20height%3D%22400%22%20fill%3D%22%230c1410%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%22796%22%20height%3D%22396%22%20fill%3D%22none%22%20stroke%3D%22%232dd4bf%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%228%208%22%20opacity%3D%220.4%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2248%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%232dd4bf%22%20font-family%3D%22monospace%22%20font-weight%3D%22bold%22%20font-size%3D%2228%22%3EMINECRAFT%20MODPACK%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2260%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%3EOfficial%20Community%20Release%3C%2Ftext%3E%3C%2Fsvg%3E";
 
 export function cleanThumbnail(thumb) {
@@ -143,12 +103,20 @@ export function cleanThumbnail(thumb) {
   return thumb;
 }
 
-// Clean legacy upload paths
+// Create site_settings table for homepage customization and configuration
+db.exec(`
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+`);
+
+// Clean legacy upload paths from modpacks so they never 404 or disappear
 try {
   db.exec(`UPDATE modpacks SET thumbnail = '${DEFAULT_THUMBNAIL_SVG}' WHERE thumbnail IS NULL OR thumbnail = '' OR thumbnail LIKE '/uploads/%'`);
 } catch (e) {}
 
-// Seed default featured_modpack_id
+// Seed default featured_modpack_id if not present
 try {
   const existingFeatured = db.prepare('SELECT value FROM site_settings WHERE key = ?').get('featured_modpack_id');
   if (!existingFeatured) {
@@ -156,21 +124,32 @@ try {
   }
 } catch (e) {}
 
-// Seed the admin account and featured modpack
+// Migration: Ensure 'role' column exists in users table
+try {
+  db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin'));");
+} catch (e) {
+  // Column already exists
+}
+
+// Seed the admin account and the featured modpack 'Minecraft 2: Biohazard'
+import bcrypt from 'bcryptjs';
+
 try {
   const adminUsername = (process.env.ADMIN_USERNAME || 'doki').trim();
   const adminPassword = (process.env.ADMIN_PASSWORD || 'doki123').trim();
 
+  // Check if admin user exists
   let doki = db.prepare('SELECT id, username, role FROM users WHERE username = ? COLLATE NOCASE').get(adminUsername);
-  const passwordHash = bcrypt.hashSync(adminPassword, 10);
   if (!doki) {
+    const passwordHash = bcrypt.hashSync(adminPassword, 10);
     const result = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run(adminUsername, passwordHash, 'admin');
     doki = { id: Number(result.lastInsertRowid), username: adminUsername, role: 'admin' };
-  } else {
-    db.prepare("UPDATE users SET role = 'admin', password_hash = ? WHERE id = ?").run(passwordHash, doki.id);
+  } else if (doki.role !== 'admin') {
+    db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(doki.id);
     doki.role = 'admin';
   }
 
+  // Check if 'Minecraft 2: Biohazard' modpack exists
   let biohazardPack = db.prepare("SELECT id FROM modpacks WHERE name LIKE '%Minecraft 2%Biohazard%'").get();
   if (!biohazardPack) {
     const insertPack = db.prepare(`
@@ -181,6 +160,7 @@ try {
     `);
 
     const shortDesc = 'The Ender Dragon has been defeated, but when we return to the Overworld, everything has withered away due to a strange plague caused by a mysterious entity. We will have to wander everywhere to search for the truth and also to return to The End.';
+    
     const longDesc = `The Ender Dragon has been defeated, but when we return to the Overworld, everything has withered away due to a strange plague caused by a mysterious entity. We will have to wander everywhere to search for the truth and also to return to The End.
 
 === KEY MODPACK FEATURES ===
@@ -191,19 +171,22 @@ try {
 • Return to The End: Gather purified catalyst stones from the deepest withered bastions to rekindle the fractured End Portal and face the final truth.`;
 
     const downloadLink = 'https://drive.google.com/drive/folders/1AiHaMZaoQpv7LcKi2rF-erqG4ymZiCN6';
+    const thumbnail = null;
     const packResult = insertPack.run(
       doki.id,
       'Minecraft 2: Biohazard',
       shortDesc,
       longDesc,
-      null,
+      thumbnail,
       downloadLink,
       'open',
       'Biohazard,Survival,Adventure,Plague,Overworld,End'
     );
 
     const modpackId = Number(packResult.lastInsertRowid);
+    console.log(`Seeded 'Minecraft 2: Biohazard' modpack (ID: ${modpackId})`);
 
+    // Seed custom presentation page for Minecraft 2: Biohazard
     const pageLayout = {
       settings: {
         backgroundColor: '#0c1410',
@@ -253,10 +236,30 @@ try {
       modpackId,
       JSON.stringify(pageLayout)
     );
+  } else {
+    // Ensure existing record uses /uploads/panorama_5.png and clean icon identifiers
+    const cleanLongDesc = `The Ender Dragon has been defeated, but when we return to the Overworld, everything has withered away due to a strange plague caused by a mysterious entity. We will have to wander everywhere to search for the truth and also to return to The End.
+
+=== KEY MODPACK FEATURES ===
+• The Biohazard Plague: A catastrophic biological corruption sweeping across the Overworld, withering flora and mutating creatures.
+• Withered Forest Biomes: Explore desolate biomes filled with eerie fog, fallen birch and oak logs, and hazardous spore clouds.
+• The Mysterious Entity: Investigate ancient laboratory ruins, decipher cryptic research journals, and track down the eldritch entity behind the outbreak.
+• Survival & Antidote Crafting: Synthesize hazard suits, craft localized quarantine barriers, and brew biological cures.
+• Return to The End: Gather purified catalyst stones from the deepest withered bastions to rekindle the fractured End Portal and face the final truth.`;
+
+    // Update long description without overwriting user's custom uploaded thumbnail
+    db.prepare("UPDATE modpacks SET long_description = ? WHERE id = ?").run(cleanLongDesc, biohazardPack.id);
+    const existingPage = db.prepare('SELECT layout_json FROM modpack_pages WHERE modpack_id = ?').get(biohazardPack.id);
+    if (existingPage && existingPage.layout_json) {
+      let updatedLayoutJson = existingPage.layout_json
+        .replace(/\/uploads\/minecraft2-biohazard\.jpg/g, '/uploads/panorama_5.png')
+        .replace(/"icon":"☣️"/g, '"icon":"biohazard"')
+        .replace(/"icon":"🔍"/g, '"icon":"search"')
+        .replace(/"icon":"🌌"/g, '"icon":"sparkles"')
+        .replace(/"icon":"🧪"/g, '"icon":"tools"');
+      db.prepare('UPDATE modpack_pages SET layout_json = ? WHERE modpack_id = ?').run(updatedLayoutJson, biohazardPack.id);
+    }
   }
-} catch (seedErr) {
-  console.error('Seeding error:', seedErr);
-}
 
 const snapshotFile = path.join(dataDir, 'db_snapshot.json');
 
@@ -267,10 +270,19 @@ function saveSnapshot() {
     const download_requests = db.prepare('SELECT * FROM download_requests').all();
     const modpack_pages = db.prepare('SELECT * FROM modpack_pages').all();
     const site_settings = db.prepare('SELECT * FROM site_settings').all();
-    const events = db.prepare('SELECT * FROM events').all();
 
-    const snapshot = { users, modpacks, download_requests, modpack_pages, site_settings, events, timestamp: Date.now() };
+    const snapshot = { users, modpacks, download_requests, modpack_pages, site_settings, timestamp: Date.now() };
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
+
+    // Also save a fallback copy in rootDir/data if writable
+    const localSnapshot = path.join(rootDir, 'data', 'db_snapshot.json');
+    if (localSnapshot !== snapshotFile) {
+      try {
+        const dir = path.dirname(localSnapshot);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(localSnapshot, JSON.stringify(snapshot, null, 2), 'utf8');
+      } catch (e) {}
+    }
   } catch (err) {
     console.warn('Failed to save DB snapshot:', err.message);
   }
@@ -278,17 +290,69 @@ function saveSnapshot() {
 
 function restoreSnapshot() {
   try {
-    if (!fs.existsSync(snapshotFile)) return;
-    const content = fs.readFileSync(snapshotFile, 'utf8');
+    let fileToLoad = snapshotFile;
+    const localSnapshot = path.join(rootDir, 'data', 'db_snapshot.json');
+    if (!fs.existsSync(fileToLoad) && fs.existsSync(localSnapshot)) {
+      fileToLoad = localSnapshot;
+    }
+    if (!fs.existsSync(fileToLoad)) return;
+
+    const content = fs.readFileSync(fileToLoad, 'utf8');
     const snapshot = JSON.parse(content);
 
     if (Array.isArray(snapshot.users)) {
       for (const u of snapshot.users) {
         const existing = db.prepare('SELECT id FROM users WHERE id = ? OR username = ? COLLATE NOCASE').get(u.id, u.username);
         if (!existing) {
-          db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role, email, bio, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .run(u.id, u.username, u.password_hash, u.role || 'user', u.email || '', u.bio || '', u.created_at || new Date().toISOString());
+          db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)')
+            .run(u.id, u.username, u.password_hash, u.role || 'user', u.created_at || new Date().toISOString());
         }
+      }
+    }
+
+    if (Array.isArray(snapshot.modpacks)) {
+      for (const p of snapshot.modpacks) {
+        const existing = db.prepare('SELECT id FROM modpacks WHERE id = ?').get(p.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT OR REPLACE INTO modpacks (
+              id, owner_id, name, short_description, long_description, thumbnail,
+              external_download_link, download_mode, release_status, release_date, tags, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            p.id, p.owner_id, p.name, p.short_description, p.long_description, p.thumbnail,
+            p.external_download_link, p.download_mode, p.release_status || 'released', p.release_date || null,
+            p.tags || '', p.created_at || new Date().toISOString()
+          );
+        } else if (p.thumbnail && p.thumbnail.startsWith('data:')) {
+          db.prepare('UPDATE modpacks SET thumbnail = ? WHERE id = ?').run(p.thumbnail, p.id);
+        }
+      }
+    }
+
+    if (Array.isArray(snapshot.download_requests)) {
+      for (const r of snapshot.download_requests) {
+        const existing = db.prepare('SELECT id FROM download_requests WHERE id = ?').get(r.id);
+        if (!existing) {
+          db.prepare('INSERT OR REPLACE INTO download_requests (id, modpack_id, requester_id, status, created_at) VALUES (?, ?, ?, ?, ?)')
+            .run(r.id, r.modpack_id, r.requester_id, r.status, r.created_at || new Date().toISOString());
+        }
+      }
+    }
+
+    if (Array.isArray(snapshot.modpack_pages)) {
+      for (const pg of snapshot.modpack_pages) {
+        const existing = db.prepare('SELECT id FROM modpack_pages WHERE id = ?').get(pg.id);
+        if (!existing) {
+          db.prepare('INSERT OR REPLACE INTO modpack_pages (id, modpack_id, layout_json, updated_at) VALUES (?, ?, ?, ?)')
+            .run(pg.id, pg.modpack_id, pg.layout_json, pg.updated_at || new Date().toISOString());
+        }
+      }
+    }
+
+    if (Array.isArray(snapshot.site_settings)) {
+      for (const s of snapshot.site_settings) {
+        db.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)').run(s.key, s.value);
       }
     }
   } catch (err) {
@@ -299,6 +363,11 @@ function restoreSnapshot() {
 db.saveSnapshot = saveSnapshot;
 db.restoreSnapshot = restoreSnapshot;
 
+// Restore snapshot if available on start
 restoreSnapshot();
+
+} catch (seedErr) {
+  console.error('Seeding error:', seedErr);
+}
 
 export default db;

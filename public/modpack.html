@@ -130,36 +130,13 @@
     const modpackId = urlParams.get('id');
 
     async function loadModpackDetail() {
-      let targetId = modpackId;
+      if (!modpackId) {
+        renderError('Modpack Not Found', 'No modpack ID was specified in the URL.');
+        return;
+      }
 
       try {
-        if (!targetId) {
-          try {
-            const featRes = await fetch('/api/modpacks/featured');
-            if (featRes.ok) {
-              const featData = await featRes.json();
-              if (featData.featured && featData.featured.id) {
-                targetId = featData.featured.id;
-              }
-            }
-          } catch (e) {}
-          if (!targetId) targetId = 1;
-        }
-
-        let res = await fetch(`/api/modpacks/${targetId}`);
-        if (!res.ok) {
-          // If specific ID not found, try fallback to featured modpack
-          try {
-            const featRes = await fetch('/api/modpacks/featured');
-            if (featRes.ok) {
-              const featData = await featRes.json();
-              if (featData.featured && featData.featured.id) {
-                res = await fetch(`/api/modpacks/${featData.featured.id}`);
-              }
-            }
-          } catch (e) {}
-        }
-
+        const res = await fetch(`/api/modpacks/${modpackId}`);
         if (!res.ok) {
           if (res.status === 404) {
             renderError('Modpack Not Found', 'The requested modpack does not exist or has been removed.');

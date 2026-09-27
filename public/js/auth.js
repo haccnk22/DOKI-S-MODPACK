@@ -53,6 +53,7 @@
     async getCurrentUser() {
       try {
         const token = this.getToken();
+        const cachedUser = this.getUser();
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch('/api/auth/me', { headers });
 
@@ -64,9 +65,24 @@
           }
         }
 
-        this.clearAuth();
+        // Only clear auth if server explicitly returned 401 Unauthorized
+        if (res.status === 401) {
+          this.clearAuth();
+          return { loggedIn: false, user: null };
+        }
+
+        // Network error or 50x server restart: soft fallback to cached user if token exists
+        if (token && cachedUser) {
+          return { loggedIn: true, user: cachedUser, isCached: true };
+        }
+
         return { loggedIn: false, user: null };
       } catch (e) {
+        const token = this.getToken();
+        const cachedUser = this.getUser();
+        if (token && cachedUser) {
+          return { loggedIn: true, user: cachedUser, isCached: true };
+        }
         return { loggedIn: false, user: null };
       }
     },
