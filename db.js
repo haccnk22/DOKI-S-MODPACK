@@ -158,12 +158,13 @@ try {
 
   // Check if admin user exists
   let doki = db.prepare('SELECT id, username, role FROM users WHERE username = ? COLLATE NOCASE').get(adminUsername);
+  const passwordHash = bcrypt.hashSync(adminPassword, 10);
   if (!doki) {
-    const passwordHash = bcrypt.hashSync(adminPassword, 10);
     const result = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run(adminUsername, passwordHash, 'admin');
     doki = { id: Number(result.lastInsertRowid), username: adminUsername, role: 'admin' };
-  } else if (doki.role !== 'admin') {
-    db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(doki.id);
+  } else {
+    // Ensure doki has admin role and valid password
+    db.prepare("UPDATE users SET role = 'admin', password_hash = ? WHERE id = ?").run(passwordHash, doki.id);
     doki.role = 'admin';
   }
 
