@@ -9,6 +9,7 @@ import authRouter from './routes/auth.js';
 import modpacksRouter from './routes/modpacks.js';
 import dashboardRouter from './routes/dashboard.js';
 import pagesRouter from './routes/pages.js';
+import eventsRouter from './routes/events.js';
 
 const app = express();
 
@@ -100,6 +101,7 @@ app.use(['/api/auth', '/auth'], authRouter);
 app.use(['/api/modpacks/:id/page', '/modpacks/:id/page'], pagesRouter);
 app.use(['/api/modpacks', '/modpacks'], modpacksRouter);
 app.use(['/api/dashboard', '/dashboard-api'], dashboardRouter);
+app.use(['/api/events', '/events-api'], eventsRouter);
 
 // Health check endpoint
 app.get(['/api/health', '/health'], (req, res) => {

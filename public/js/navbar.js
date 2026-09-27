@@ -108,9 +108,17 @@ async function initNavbar() {
       if (navLinksContainer) {
         // Remove any pre-existing dynamic links to guarantee zero duplicate links
         const existingDynamicLinks = navLinksContainer.querySelectorAll(
-          'a[href="/my-downloads.html"], a[href="/dashboard.html"], a[href="/modpack-create.html"], #nav-my-downloads, #nav-dashboard, #nav-publish'
+          'a[href="/events.html"], a[href="/my-downloads.html"], a[href="/profile.html"], a[href="/dashboard.html"], a[href="/modpack-create.html"], #nav-events, #nav-my-downloads, #nav-profile, #nav-dashboard, #nav-publish'
         );
         existingDynamicLinks.forEach((el) => el.remove());
+
+        // Community Events for all users
+        const eventsLink = document.createElement('a');
+        eventsLink.id = 'nav-events';
+        eventsLink.href = '/events.html';
+        eventsLink.className = 'nav-link' + (currentPath === '/events.html' ? ' active' : '');
+        eventsLink.textContent = 'Events';
+        navLinksContainer.appendChild(eventsLink);
 
         // My Downloads for all logged-in users
         const myDl = document.createElement('a');
@@ -119,6 +127,14 @@ async function initNavbar() {
         myDl.className = 'nav-link' + (currentPath === '/my-downloads.html' ? ' active' : '');
         myDl.textContent = 'My Downloads';
         navLinksContainer.appendChild(myDl);
+
+        // User Profile Settings
+        const profLink = document.createElement('a');
+        profLink.id = 'nav-profile';
+        profLink.href = '/profile.html';
+        profLink.className = 'nav-link' + (currentPath === '/profile.html' ? ' active' : '');
+        profLink.textContent = 'Profile';
+        navLinksContainer.appendChild(profLink);
 
         // Dashboard & Publish Modpack ONLY for Admin (doki)
         if (data.user.role === 'admin') {

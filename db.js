@@ -124,12 +124,30 @@ try {
   }
 } catch (e) {}
 
-// Migration: Ensure 'role' column exists in users table
+// Create events table for Community Events
+db.exec(`
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    thumbnail TEXT,
+    event_date TEXT NOT NULL,
+    prize TEXT,
+    link_url TEXT,
+    description TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date DESC);
+`);
+
+// Migration: Ensure 'email' and 'bio' columns exist in users table
 try {
-  db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin'));");
-} catch (e) {
-  // Column already exists
-}
+  db.exec("ALTER TABLE users ADD COLUMN email TEXT DEFAULT '';");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT '';");
+} catch (e) {}
 
 // Seed the admin account and the featured modpack 'Minecraft 2: Biohazard'
 import bcrypt from 'bcryptjs';
@@ -270,8 +288,9 @@ function saveSnapshot() {
     const download_requests = db.prepare('SELECT * FROM download_requests').all();
     const modpack_pages = db.prepare('SELECT * FROM modpack_pages').all();
     const site_settings = db.prepare('SELECT * FROM site_settings').all();
+    const events = db.prepare('SELECT * FROM events').all();
 
-    const snapshot = { users, modpacks, download_requests, modpack_pages, site_settings, timestamp: Date.now() };
+    const snapshot = { users, modpacks, download_requests, modpack_pages, site_settings, events, timestamp: Date.now() };
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
 
     // Also save a fallback copy in rootDir/data if writable
@@ -304,8 +323,10 @@ function restoreSnapshot() {
       for (const u of snapshot.users) {
         const existing = db.prepare('SELECT id FROM users WHERE id = ? OR username = ? COLLATE NOCASE').get(u.id, u.username);
         if (!existing) {
-          db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)')
-            .run(u.id, u.username, u.password_hash, u.role || 'user', u.created_at || new Date().toISOString());
+          db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role, email, bio, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .run(u.id, u.username, u.password_hash, u.role || 'user', u.email || '', u.bio || '', u.created_at || new Date().toISOString());
+        } else if (u.email || u.bio) {
+          db.prepare('UPDATE users SET email = COALESCE(NULLIF(?, ""), email), bio = COALESCE(NULLIF(?, ""), bio) WHERE id = ?').run(u.email || '', u.bio || '', u.id);
         }
       }
     }
@@ -355,6 +376,21 @@ function restoreSnapshot() {
         db.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)').run(s.key, s.value);
       }
     }
+
+    if (Array.isArray(snapshot.events)) {
+      for (const ev of snapshot.events) {
+        const existing = db.prepare('SELECT id FROM events WHERE id = ?').get(ev.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT OR REPLACE INTO events (id, creator_id, title, thumbnail, event_date, prize, link_url, description, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            ev.id, ev.creator_id, ev.title, ev.thumbnail, ev.event_date,
+            ev.prize || '', ev.link_url || '', ev.description, ev.created_at || new Date().toISOString()
+          );
+        }
+      }
+    }
   } catch (err) {
     console.warn('Failed to restore DB snapshot:', err.message);
   }
@@ -365,6 +401,30 @@ db.restoreSnapshot = restoreSnapshot;
 
 // Restore snapshot if available on start
 restoreSnapshot();
+
+try {
+  const existingEv = db.prepare('SELECT id FROM events LIMIT 1').get();
+  if (!existingEv) {
+    const adminUser = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
+    if (adminUser) {
+      db.prepare(`
+        INSERT INTO events (creator_id, title, thumbnail, event_date, prize, link_url, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        adminUser.id,
+        'Biohazard Speedrun & Survival Tournament 2026',
+        DEFAULT_THUMBNAIL_SVG,
+        'October 15, 2026 - 18:00 UTC',
+        '🏆 $500 Steam Gift Card + Official Doki VIP Badge',
+        'https://youtube.com',
+        'Compete with players worldwide in clearing the Biohazard Nether Gate and returning the purified Ender Crystal. Broadcast live on YouTube!'
+      );
+      if (db.saveSnapshot) db.saveSnapshot();
+    }
+  }
+} catch (e) {
+  console.warn('Failed to seed default event:', e);
+}
 
 } catch (seedErr) {
   console.error('Seeding error:', seedErr);

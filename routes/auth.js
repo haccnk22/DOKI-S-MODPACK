@@ -231,7 +231,7 @@ router.get('/me', (req, res) => {
 
   try {
     // Retrieve fresh user info using parameterized query
-    const userStmt = db.prepare('SELECT id, username, role, created_at FROM users WHERE id = ?');
+    const userStmt = db.prepare('SELECT id, username, role, email, bio, created_at FROM users WHERE id = ?');
     const user = userStmt.get(authUser.userId);
 
     if (!user) {
@@ -251,12 +251,105 @@ router.get('/me', (req, res) => {
         id: user.id,
         username: user.username,
         role: user.role || 'user',
+        email: user.email || '',
+        bio: user.bio || '',
         createdAt: user.created_at,
       },
     });
   } catch (err) {
     console.error('Who am I error:', err);
     return res.status(500).json({ error: 'Failed to retrieve user status' });
+  }
+});
+
+// PUT /api/auth/profile - Update username, email, and bio
+router.put('/profile', (req, res) => {
+  const authUser = getAuthenticatedUser(req);
+  if (!authUser) return res.status(401).json({ error: 'You must be logged in to update profile' });
+
+  try {
+    const { username, email, bio } = req.body;
+    const cleanUsername = (username || '').trim();
+    const cleanEmail = (email || '').trim();
+    const cleanBio = (bio || '').trim();
+
+    if (!cleanUsername || cleanUsername.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters long' });
+    }
+
+    // Check if new username conflicts with another user
+    const existing = db.prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE AND id != ?').get(cleanUsername, authUser.userId);
+    if (existing) {
+      return res.status(409).json({ error: 'Username is already taken by another user' });
+    }
+
+    db.prepare(`
+      UPDATE users
+      SET username = ?, email = ?, bio = ?
+      WHERE id = ?
+    `).run(cleanUsername, cleanEmail, cleanBio, authUser.userId);
+
+    if (db.saveSnapshot) db.saveSnapshot();
+
+    // Update session
+    if (req.session) {
+      req.session.username = cleanUsername;
+    }
+
+    const token = generateToken(authUser.userId);
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      token,
+      user: {
+        id: authUser.userId,
+        username: cleanUsername,
+        role: authUser.role,
+        email: cleanEmail,
+        bio: cleanBio,
+      },
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    return res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// PUT /api/auth/password - Change user password
+router.put('/password', (req, res) => {
+  const authUser = getAuthenticatedUser(req);
+  if (!authUser) return res.status(401).json({ error: 'You must be logged in to change password' });
+
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    const user = db.prepare('SELECT id, password_hash FROM users WHERE id = ?').get(authUser.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const passwordValid = bcrypt.compareSync(currentPassword, user.password_hash);
+    if (!passwordValid) {
+      return res.status(400).json({ error: 'Incorrect current password' });
+    }
+
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, authUser.userId);
+
+    if (db.saveSnapshot) db.saveSnapshot();
+
+    return res.json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    return res.status(500).json({ error: 'Failed to change password' });
   }
 });
 

@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import crypto from 'crypto';
-import db from '../db.js';
+import db, { cleanThumbnail } from '../db.js';
 import { getAuthenticatedUser } from '../auth-helper.js';
 import { uploadsDir } from '../paths.js';
 
@@ -79,6 +79,7 @@ router.get('/', (req, res) => {
     if (!modpack) {
       return res.status(404).json({ error: 'Modpack not found' });
     }
+    modpack.thumbnail = cleanThumbnail(modpack.thumbnail);
 
     const authUser = getAuthenticatedUser(req);
     const isOwner = !!(authUser && (authUser.userId === modpack.owner_id || authUser.role === 'admin'));
