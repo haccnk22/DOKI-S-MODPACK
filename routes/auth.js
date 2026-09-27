@@ -146,6 +146,7 @@ router.post('/login', async (req, res) => {
     }
 
     const cleanUsername = String(username).trim();
+    const cleanPassword = String(password).trim();
 
     // Query user by username using parameterized SQL
     const userStmt = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE');
@@ -157,7 +158,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Verify password hash
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    const passwordMatch = await bcrypt.compare(cleanPassword, user.password_hash);
     if (!passwordMatch) {
       recordFailedLogin(clientIp);
       return res.status(401).json({ error: 'Invalid username or password' });

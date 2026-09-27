@@ -201,13 +201,13 @@ router.get('/', (req, res) => {
     }
 
     if (tag && tag.toLowerCase() !== 'all') {
-      sql += ` AND (',' || m.tags || ',' LIKE ?)`;
-      params.push(`%,${tag},%`);
+      sql += ` AND (',' || LOWER(m.tags) || ',' LIKE ?)`;
+      params.push(`%,${tag.toLowerCase()},%`);
     }
 
     if (status && status.toLowerCase() !== 'all') {
-      sql += ` AND m.release_status = ?`;
-      params.push(status);
+      sql += ` AND LOWER(m.release_status) = LOWER(?)`;
+      params.push(status.toLowerCase());
     }
 
     sql += ` ORDER BY m.created_at DESC`;
