@@ -1,7 +1,7 @@
+import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import initSqlJs from 'sql.js';
 import bcrypt from 'bcryptjs';
 import { dataDir, isServerless, rootDir } from './paths.js';
 
@@ -14,11 +14,9 @@ try {
     fs.mkdirSync(dir, { recursive: true });
   }
 } catch (err) {
-  // If dataDir cannot be written (e.g. read-only filesystem), fallback directly to os.tmpdir()
   dbPath = path.join(os.tmpdir(), 'mcintroduce.db');
 }
 
-// If running in serverless environment and a pre-seeded local db exists, copy it to the writable location
 if (isServerless) {
   const localDbPath = path.join(rootDir, 'data', 'mcintroduce.db');
   if (!fs.existsSync(dbPath) && fs.existsSync(localDbPath)) {
@@ -30,113 +28,9 @@ if (isServerless) {
   }
 }
 
-let db = null;
-
-// Dual-engine initialization: Attempt node:sqlite first, fallback to sql.js WASM for Node <22 or Vercel serverless environment
-try {
-  const { DatabaseSync } = await import('node:sqlite');
-  const nodeDb = new DatabaseSync(dbPath);
-  nodeDb.exec('PRAGMA foreign_keys = ON;');
-  
-  db = {
-    exec(sql) {
-      return nodeDb.exec(sql);
-    },
-    prepare(sql) {
-      const stmt = nodeDb.prepare(sql);
-      return {
-        get(...params) {
-          return stmt.get(...params);
-        },
-        all(...params) {
-          return stmt.all(...params);
-        },
-        run(...params) {
-          return stmt.run(...params);
-        }
-      };
-    }
-  };
-} catch (nodeSqliteErr) {
-  console.warn('Notice: node:sqlite unavailable, using sql.js WASM engine:', nodeSqliteErr.message);
-  
-  const SQL = await initSqlJs();
-  let sqlJsDb;
-  if (fs.existsSync(dbPath)) {
-    try {
-      const fileBuffer = fs.readFileSync(dbPath);
-      sqlJsDb = new SQL.Database(fileBuffer);
-    } catch (e) {
-      sqlJsDb = new SQL.Database();
-    }
-  } else {
-    sqlJsDb = new SQL.Database();
-  }
-
-  function saveSqlJsDisk() {
-    try {
-      const data = sqlJsDb.export();
-      const buffer = Buffer.from(data);
-      const dir = path.dirname(dbPath);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(dbPath, buffer);
-    } catch (e) {}
-  }
-
-  db = {
-    exec(sql) {
-      sqlJsDb.run(sql);
-      saveSqlJsDisk();
-    },
-    prepare(sql) {
-      return {
-        get(...params) {
-          try {
-            const stmt = sqlJsDb.prepare(sql);
-            stmt.bind(params);
-            let res = undefined;
-            if (stmt.step()) {
-              res = stmt.getAsObject();
-            }
-            stmt.free();
-            return res;
-          } catch (e) {
-            console.error('sql.js get error:', e.message, sql, params);
-            return undefined;
-          }
-        },
-        all(...params) {
-          try {
-            const stmt = sqlJsDb.prepare(sql);
-            stmt.bind(params);
-            const res = [];
-            while (stmt.step()) {
-              res.push(stmt.getAsObject());
-            }
-            stmt.free();
-            return res;
-          } catch (e) {
-            console.error('sql.js all error:', e.message, sql, params);
-            return [];
-          }
-        },
-        run(...params) {
-          try {
-            sqlJsDb.run(sql, params);
-            const res = sqlJsDb.exec('SELECT last_insert_rowid() as id, changes() as changes');
-            const lastInsertRowid = Number(res[0] && res[0].values[0] ? res[0].values[0][0] : 0);
-            const changes = Number(res[0] && res[0].values[0] ? res[0].values[0][1] : 0);
-            saveSqlJsDisk();
-            return { lastInsertRowid, changes };
-          } catch (e) {
-            console.error('sql.js run error:', e.message, sql, params);
-            return { lastInsertRowid: 0, changes: 0 };
-          }
-        }
-      };
-    }
-  };
-}
+// Initialize SQLite database using Node's built-in node:sqlite synchronously
+const db = new DatabaseSync(dbPath);
+db.exec('PRAGMA foreign_keys = ON;');
 
 // Create users table
 db.exec(`
@@ -359,19 +253,7 @@ try {
       modpackId,
       JSON.stringify(pageLayout)
     );
-  } else {
-    const cleanLongDesc = `The Ender Dragon has been defeated, but when we return to the Overworld, everything has withered away due to a strange plague caused by a mysterious entity. We will have to wander everywhere to search for the truth and also to return to The End.
-
-=== KEY MODPACK FEATURES ===
-• The Biohazard Plague: A catastrophic biological corruption sweeping across the Overworld, withering flora and mutating creatures.
-• Withered Forest Biomes: Explore desolate biomes filled with eerie fog, fallen birch and oak logs, and hazardous spore clouds.
-• The Mysterious Entity: Investigate ancient laboratory ruins, decipher cryptic research journals, and track down the eldritch entity behind the outbreak.
-• Survival & Antidote Crafting: Synthesize hazard suits, craft localized quarantine barriers, and brew biological cures.
-• Return to The End: Gather purified catalyst stones from the deepest withered bastions to rekindle the fractured End Portal and face the final truth.`;
-
-    db.prepare("UPDATE modpacks SET long_description = ? WHERE id = ?").run(cleanLongDesc, biohazardPack.id);
   }
-
 } catch (seedErr) {
   console.error('Seeding error:', seedErr);
 }
@@ -389,15 +271,6 @@ function saveSnapshot() {
 
     const snapshot = { users, modpacks, download_requests, modpack_pages, site_settings, events, timestamp: Date.now() };
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
-
-    const localSnapshot = path.join(rootDir, 'data', 'db_snapshot.json');
-    if (localSnapshot !== snapshotFile) {
-      try {
-        const dir = path.dirname(localSnapshot);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(localSnapshot, JSON.stringify(snapshot, null, 2), 'utf8');
-      } catch (e) {}
-    }
   } catch (err) {
     console.warn('Failed to save DB snapshot:', err.message);
   }
@@ -405,14 +278,8 @@ function saveSnapshot() {
 
 function restoreSnapshot() {
   try {
-    let fileToLoad = snapshotFile;
-    const localSnapshot = path.join(rootDir, 'data', 'db_snapshot.json');
-    if (!fs.existsSync(fileToLoad) && fs.existsSync(localSnapshot)) {
-      fileToLoad = localSnapshot;
-    }
-    if (!fs.existsSync(fileToLoad)) return;
-
-    const content = fs.readFileSync(fileToLoad, 'utf8');
+    if (!fs.existsSync(snapshotFile)) return;
+    const content = fs.readFileSync(snapshotFile, 'utf8');
     const snapshot = JSON.parse(content);
 
     if (Array.isArray(snapshot.users)) {
@@ -421,65 +288,6 @@ function restoreSnapshot() {
         if (!existing) {
           db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role, email, bio, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
             .run(u.id, u.username, u.password_hash, u.role || 'user', u.email || '', u.bio || '', u.created_at || new Date().toISOString());
-        }
-      }
-    }
-
-    if (Array.isArray(snapshot.modpacks)) {
-      for (const p of snapshot.modpacks) {
-        const existing = db.prepare('SELECT id FROM modpacks WHERE id = ?').get(p.id);
-        if (!existing) {
-          db.prepare(`
-            INSERT OR REPLACE INTO modpacks (
-              id, owner_id, name, short_description, long_description, thumbnail,
-              external_download_link, download_mode, release_status, release_date, tags, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            p.id, p.owner_id, p.name, p.short_description, p.long_description, p.thumbnail,
-            p.external_download_link, p.download_mode, p.release_status || 'released', p.release_date || null,
-            p.tags || '', p.created_at || new Date().toISOString()
-          );
-        }
-      }
-    }
-
-    if (Array.isArray(snapshot.download_requests)) {
-      for (const r of snapshot.download_requests) {
-        const existing = db.prepare('SELECT id FROM download_requests WHERE id = ?').get(r.id);
-        if (!existing) {
-          db.prepare('INSERT OR REPLACE INTO download_requests (id, modpack_id, requester_id, status, created_at) VALUES (?, ?, ?, ?, ?)')
-            .run(r.id, r.modpack_id, r.requester_id, r.status, r.created_at || new Date().toISOString());
-        }
-      }
-    }
-
-    if (Array.isArray(snapshot.modpack_pages)) {
-      for (const pg of snapshot.modpack_pages) {
-        const existing = db.prepare('SELECT id FROM modpack_pages WHERE id = ?').get(pg.id);
-        if (!existing) {
-          db.prepare('INSERT OR REPLACE INTO modpack_pages (id, modpack_id, layout_json, updated_at) VALUES (?, ?, ?, ?)')
-            .run(pg.id, pg.modpack_id, pg.layout_json, pg.updated_at || new Date().toISOString());
-        }
-      }
-    }
-
-    if (Array.isArray(snapshot.site_settings)) {
-      for (const s of snapshot.site_settings) {
-        db.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)').run(s.key, s.value);
-      }
-    }
-
-    if (Array.isArray(snapshot.events)) {
-      for (const ev of snapshot.events) {
-        const existing = db.prepare('SELECT id FROM events WHERE id = ?').get(ev.id);
-        if (!existing) {
-          db.prepare(`
-            INSERT OR REPLACE INTO events (id, creator_id, title, thumbnail, event_date, prize, link_url, description, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            ev.id, ev.creator_id, ev.title, ev.thumbnail, ev.event_date,
-            ev.prize || '', ev.link_url || '', ev.description, ev.created_at || new Date().toISOString()
-          );
         }
       }
     }
