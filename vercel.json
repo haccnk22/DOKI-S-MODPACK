@@ -1,3 +1,17 @@
 {
-  "version": 2
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "/api/uploads.js"
+    },
+    {
+      "source": "/vendor/:path*",
+      "destination": "/api/index.js"
+    }
+  ]
 }
