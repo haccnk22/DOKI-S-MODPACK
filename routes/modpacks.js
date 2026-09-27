@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import db from '../db.js';
+import db, { cleanThumbnail } from '../db.js';
 import { getAuthenticatedUser } from '../auth-helper.js';
 import { uploadsDir } from '../paths.js';
 
@@ -73,6 +73,101 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// GET /api/modpacks/featured - Retrieve homepage featured modpack & list for admin custom selection
+router.get('/featured', (req, res) => {
+  try {
+    let setting = db.prepare('SELECT value FROM site_settings WHERE key = ?').get('featured_modpack_id');
+    let featuredId = setting ? parseInt(setting.value, 10) : 1;
+
+    let stmt = db.prepare(`
+      SELECT 
+        m.id,
+        m.owner_id,
+        u.username AS owner_username,
+        m.name,
+        m.short_description,
+        m.long_description,
+        m.thumbnail,
+        m.download_mode,
+        m.release_status,
+        m.release_date,
+        m.tags,
+        m.created_at
+      FROM modpacks m
+      JOIN users u ON m.owner_id = u.id
+      WHERE m.id = ?
+    `);
+    let pack = stmt.get(featuredId);
+
+    if (!pack) {
+      pack = db.prepare(`
+        SELECT 
+          m.id, m.owner_id, u.username AS owner_username, m.name, m.short_description, 
+          m.long_description, m.thumbnail, m.download_mode, m.release_status, m.release_date, m.tags, m.created_at
+        FROM modpacks m 
+        JOIN users u ON m.owner_id = u.id 
+        ORDER BY m.created_at ASC LIMIT 1
+      `).get();
+    }
+
+    if (pack) {
+      pack.thumbnail = cleanThumbnail(pack.thumbnail);
+    }
+
+    const allModpacks = db.prepare('SELECT id, name, release_status FROM modpacks ORDER BY name ASC').all();
+
+    return res.json({
+      success: true,
+      featured: pack || null,
+      allModpacks,
+    });
+  } catch (err) {
+    console.error('Get featured modpack error:', err);
+    return res.status(500).json({ error: 'Failed to retrieve featured modpack' });
+  }
+});
+
+// POST /api/modpacks/featured - Admin selects which modpack appears on homepage
+router.post('/featured', requireAdmin, (req, res) => {
+  try {
+    const { modpackId } = req.body;
+    const targetId = parseInt(modpackId, 10);
+    if (isNaN(targetId)) {
+      return res.status(400).json({ error: 'Invalid modpack ID' });
+    }
+
+    const pack = db.prepare('SELECT id, name FROM modpacks WHERE id = ?').get(targetId);
+    if (!pack) {
+      return res.status(404).json({ error: 'Selected modpack does not exist' });
+    }
+
+    db.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)').run('featured_modpack_id', String(targetId));
+    if (db.saveSnapshot) db.saveSnapshot();
+
+    const fullPack = db.prepare(`
+      SELECT 
+        m.id, m.owner_id, u.username AS owner_username, m.name, m.short_description, 
+        m.long_description, m.thumbnail, m.download_mode, m.release_status, m.release_date, m.tags, m.created_at
+      FROM modpacks m 
+      JOIN users u ON m.owner_id = u.id 
+      WHERE m.id = ?
+    `).get(targetId);
+
+    if (fullPack) {
+      fullPack.thumbnail = cleanThumbnail(fullPack.thumbnail);
+    }
+
+    return res.json({
+      success: true,
+      message: `Homepage featured modpack updated to '${pack.name}'`,
+      featured: fullPack,
+    });
+  } catch (err) {
+    console.error('Set featured modpack error:', err);
+    return res.status(500).json({ error: 'Failed to update featured modpack' });
+  }
+});
+
 // GET /api/modpacks - List modpacks (Public response - NEVER includes download link)
 router.get('/', (req, res) => {
   try {
@@ -118,7 +213,11 @@ router.get('/', (req, res) => {
     sql += ` ORDER BY m.created_at DESC`;
 
     const stmt = db.prepare(sql);
-    const modpacks = stmt.all(...params);
+    const rawModpacks = stmt.all(...params);
+    const modpacks = rawModpacks.map(m => ({
+      ...m,
+      thumbnail: cleanThumbnail(m.thumbnail),
+    }));
 
     return res.json({
       success: true,
@@ -170,6 +269,7 @@ router.get('/:id', (req, res) => {
       success: true,
       modpack: {
         ...modpack,
+        thumbnail: cleanThumbnail(modpack.thumbnail),
         isOwner,
         isAdmin,
       },

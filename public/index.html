@@ -43,22 +43,43 @@
 
   <main>
     <div class="page-container" style="text-align: center;">
-      <!-- Hero Header: Minecraft 2: Biohazard -->
+      <!-- Admin Homepage Customization Bar (Visible to Admin only) -->
+      <div id="admin-featured-controls" style="display: none; max-width: 920px; margin: 0 auto 1.5rem auto; padding: 1rem 1.25rem; background: rgba(15, 23, 42, 0.95); border: 2px solid #2dd4bf; border-radius: 8px; text-align: left; box-shadow: 0 0 15px rgba(45, 212, 191, 0.15);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-family: monospace; font-size: 0.75rem; font-weight: bold; padding: 0.2rem 0.5rem; background: rgba(45, 212, 191, 0.2); color: #2dd4bf; border-radius: 4px; border: 1px solid #2dd4bf;">
+              ⚡ ADMIN HOMEPAGE CONTROL
+            </span>
+            <span style="color: #cbd5e1; font-size: 0.9rem; font-weight: 600;">Choose Homepage Featured Modpack:</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-grow: 1; max-width: 480px;">
+            <select id="admin-featured-select" class="form-control" style="background: #0f172a; color: #fff; border-color: #334155; padding: 0.4rem 0.75rem; font-size: 0.9rem; border-radius: 6px;">
+              <option value="">Loading modpacks...</option>
+            </select>
+            <button id="admin-set-featured-btn" class="btn btn-primary btn-sm" style="background: #2dd4bf; color: #0f172a; font-weight: bold; white-space: nowrap; padding: 0.45rem 1rem;">
+              Set Featured
+            </button>
+          </div>
+        </div>
+        <div id="admin-featured-msg" style="margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600; display: none;"></div>
+      </div>
+
+      <!-- Hero Header: Featured Modpack -->
       <div class="hero-card" style="max-width: 920px; margin: 0 auto; border-color: #2dd4bf; box-shadow: 0 0 25px rgba(45, 212, 191, 0.2);">
         <div id="featured-status-badge" class="phase-badge" style="background: rgba(45, 212, 191, 0.2); color: #2dd4bf; border: 1px solid #2dd4bf; display: inline-flex; align-items: center; gap: 6px;">
           <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg>
           OFFICIAL RELEASE BY DOKI
         </div>
-        <h1 class="hero-title" style="margin-top: 0.5rem;">
+        <h1 id="featured-title" class="hero-title" style="margin-top: 0.5rem;">
           Minecraft 2: <span style="color: #2dd4bf;">Biohazard</span>
         </h1>
-        <p class="hero-subtitle" style="font-size: 1.15rem; line-height: 1.6; max-width: 800px; margin: 0.5rem auto 1.25rem;">
+        <p id="featured-subtitle" class="hero-subtitle" style="font-size: 1.15rem; line-height: 1.6; max-width: 800px; margin: 0.5rem auto 1.25rem;">
           The Ender Dragon has been defeated, but when we return to the Overworld, everything has withered away due to a strange plague caused by a mysterious entity. We will have to wander everywhere to search for the truth and also to return to The End.
         </p>
 
         <!-- Featured Banner Preview -->
         <div style="margin: 1.5rem 0; border-radius: 8px; overflow: hidden; border: 2px solid #334155; position: relative; background: #0c1410; min-height: 220px;">
-          <img id="featured-banner-img" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22800%22%20height%3D%22400%22%20fill%3D%22%230c1410%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%232dd4bf%22%20font-family%3D%22sans-serif%22%20font-size%3D%2224%22%3EMinecraft%202%3A%20Biohazard%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Minecraft 2: Biohazard Official Thumbnail" style="width: 100%; max-height: 380px; object-fit: cover; display: block;" referrerpolicy="no-referrer">
+          <img id="featured-banner-img" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22800%22%20height%3D%22400%22%20fill%3D%22%230c1410%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%22796%22%20height%3D%22396%22%20fill%3D%22none%22%20stroke%3D%22%232dd4bf%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%228%208%22%20opacity%3D%220.4%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2248%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%232dd4bf%22%20font-family%3D%22monospace%22%20font-weight%3D%22bold%22%20font-size%3D%2228%22%3EMINECRAFT%20MODPACK%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2260%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%3EOfficial%20Community%20Release%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Featured Modpack Thumbnail" style="width: 100%; max-height: 380px; object-fit: cover; display: block;" referrerpolicy="no-referrer">
           <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(12, 20, 16, 0.95)); padding: 1.25rem; text-align: left; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
             <div>
               <span id="featured-author" style="font-family: monospace; font-size: 0.85rem; color: #2dd4bf; background: rgba(0,0,0,0.6); padding: 0.25rem 0.6rem; border-radius: 4px;">Created by doki</span>
@@ -72,11 +93,11 @@
         </div>
 
         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
-          <a href="/modpack.html?id=1" class="btn btn-primary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
+          <a id="featured-details-btn" href="/modpack.html?id=1" class="btn btn-primary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
             <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M4.93 10.93l3.46 2"></path><path d="M19.07 10.93l-3.46 2"></path><circle cx="12" cy="4" r="2"></circle><circle cx="6" cy="15" r="2"></circle><circle cx="18" cy="15" r="2"></circle><path d="M7.5 16.5l3.5-2"></path><path d="M16.5 16.5l-3.5-2"></path></svg>
             View Modpack Details
           </a>
-          <a href="/page.html?id=1" class="btn btn-secondary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
+          <a id="featured-showcase-btn" href="/page.html?id=1" class="btn btn-secondary" style="font-size: 1.05rem; padding: 0.75rem 1.75rem; gap: 6px;">
             <svg class="icon-svg icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.5-.74 1.5-1.5 0-.41-.16-.79-.44-1.07-.27-.28-.44-.65-.44-1.07 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.97-4.48-9-10-9z"></path></svg>
             Custom 3D Showcase
           </a>
@@ -182,19 +203,46 @@
   <!-- Initialize 3D Voxel Scene and Dynamic Featured Modpack -->
   <script type="module">
     import { initVoxelScene } from '/js/voxel-scene.js';
+    import { auth } from '/js/auth.js';
 
-    // Dynamically load featured modpack data so any edited thumbnail/details update instantly
+    const DEFAULT_SVG = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22800%22%20height%3D%22400%22%20fill%3D%22%230c1410%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%22796%22%20height%3D%22396%22%20fill%3D%22none%22%20stroke%3D%22%232dd4bf%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%228%208%22%20opacity%3D%220.4%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2248%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%232dd4bf%22%20font-family%3D%22monospace%22%20font-weight%3D%22bold%22%20font-size%3D%2228%22%3EMINECRAFT%20MODPACK%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2260%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%3EOfficial%20Community%20Release%3C%2Ftext%3E%3C%2Fsvg%3E";
+
+    // Dynamically update featured modpack hero banner on homepage
     function applyFeaturedPack(pack) {
       if (!pack) return;
+
+      const titleEl = document.getElementById('featured-title');
+      if (titleEl && pack.name) {
+        titleEl.textContent = pack.name;
+      }
+
+      const subtitleEl = document.getElementById('featured-subtitle');
+      if (subtitleEl && pack.short_description) {
+        subtitleEl.textContent = pack.short_description;
+      }
+
       const bannerImg = document.getElementById('featured-banner-img');
-      if (bannerImg && pack.thumbnail) {
-        bannerImg.src = pack.thumbnail;
+      if (bannerImg) {
+        bannerImg.onerror = () => {
+          bannerImg.onerror = null;
+          bannerImg.src = DEFAULT_SVG;
+        };
+        bannerImg.src = (pack.thumbnail && !pack.thumbnail.startsWith('/uploads/')) ? pack.thumbnail : DEFAULT_SVG;
       }
 
       const authorEl = document.getElementById('featured-author');
-      if (authorEl && pack.owner_username) {
-        authorEl.textContent = `Created by ${pack.owner_username}`;
+      if (authorEl) {
+        authorEl.textContent = `Created by ${pack.owner_username || 'doki'}`;
       }
+
+      const dlLink = document.getElementById('featured-download-link');
+      if (dlLink) dlLink.href = `/modpack.html?id=${pack.id}`;
+
+      const detailsBtn = document.getElementById('featured-details-btn');
+      if (detailsBtn) detailsBtn.href = `/modpack.html?id=${pack.id}`;
+
+      const showcaseBtn = document.getElementById('featured-showcase-btn');
+      if (showcaseBtn) showcaseBtn.href = `/page.html?id=${pack.id}`;
 
       const statusBadge = document.getElementById('featured-status-badge');
       if (statusBadge) {
@@ -218,32 +266,107 @@
       }
     }
 
-    // Apply cached featured pack instantly on page load (0 delay)
+    // Apply cached featured pack instantly if valid
     try {
       const cached = localStorage.getItem('cached_featured_modpack');
       if (cached) {
-        applyFeaturedPack(JSON.parse(cached));
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.thumbnail && !parsed.thumbnail.startsWith('/uploads/')) {
+          applyFeaturedPack(parsed);
+        } else {
+          localStorage.removeItem('cached_featured_modpack');
+        }
       }
     } catch (e) {}
 
+    let currentAllModpacks = [];
+
     async function loadFeaturedModpack() {
       try {
-        const res = await fetch('/api/modpacks');
+        const res = await fetch('/api/modpacks/featured');
         if (!res.ok) return;
         const data = await res.json();
-        if (!data.modpacks || data.modpacks.length === 0) return;
+        if (!data.featured) return;
 
-        // Find Minecraft 2: Biohazard (id: 1) or take the first featured pack
-        const pack = data.modpacks.find(p => p.id === 1) || data.modpacks[0];
-        if (!pack) return;
+        currentAllModpacks = data.allModpacks || [];
 
         try {
-          localStorage.setItem('cached_featured_modpack', JSON.stringify(pack));
+          localStorage.setItem('cached_featured_modpack', JSON.stringify(data.featured));
         } catch (e) {}
 
-        applyFeaturedPack(pack);
+        applyFeaturedPack(data.featured);
+
+        // Check if user is admin and setup Admin Customization Bar
+        setupAdminControl(data.featured.id, currentAllModpacks);
       } catch (err) {
         console.warn('Could not refresh featured modpack banner:', err);
+      }
+    }
+
+    async function setupAdminControl(selectedId, allModpacks) {
+      try {
+        const authData = await auth.getCurrentUser();
+        if (authData && authData.loggedIn && authData.user && authData.user.role === 'admin') {
+          const controlsBox = document.getElementById('admin-featured-controls');
+          const selectEl = document.getElementById('admin-featured-select');
+          const setBtn = document.getElementById('admin-set-featured-btn');
+          const msgEl = document.getElementById('admin-featured-msg');
+
+          if (controlsBox && selectEl && setBtn) {
+            controlsBox.style.display = 'block';
+
+            selectEl.innerHTML = allModpacks.map(p => `
+              <option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>
+                ${p.name} (ID: ${p.id}) ${p.release_status ? `[${p.release_status.toUpperCase()}]` : ''}
+              </option>
+            `).join('');
+
+            setBtn.onclick = async () => {
+              const targetId = selectEl.value;
+              if (!targetId) return;
+
+              setBtn.disabled = true;
+              setBtn.textContent = 'Saving...';
+              msgEl.style.display = 'none';
+
+              try {
+                const token = auth.getToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const saveRes = await fetch('/api/modpacks/featured', {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify({ modpackId: targetId })
+                });
+
+                const saveResult = await saveRes.json();
+                if (saveRes.ok && saveResult.featured) {
+                  applyFeaturedPack(saveResult.featured);
+                  try {
+                    localStorage.setItem('cached_featured_modpack', JSON.stringify(saveResult.featured));
+                  } catch (e) {}
+                  msgEl.style.display = 'block';
+                  msgEl.style.color = '#2dd4bf';
+                  msgEl.textContent = `✅ ${saveResult.message || 'Homepage featured modpack updated!'}`;
+                } else {
+                  msgEl.style.display = 'block';
+                  msgEl.style.color = '#ef4444';
+                  msgEl.textContent = `❌ ${saveResult.error || 'Failed to update featured modpack'}`;
+                }
+              } catch (e) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = '#ef4444';
+                msgEl.textContent = `❌ Network error saving featured modpack`;
+              } finally {
+                setBtn.disabled = false;
+                setBtn.textContent = 'Set Featured';
+              }
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('Admin check error:', e);
       }
     }
 

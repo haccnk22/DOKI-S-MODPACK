@@ -1,5 +1,5 @@
 import express from 'express';
-import db from '../db.js';
+import db, { cleanThumbnail } from '../db.js';
 import { getAuthenticatedUser } from '../auth-helper.js';
 
 const router = express.Router();
@@ -49,7 +49,11 @@ router.get('/incoming-requests', requireAuth, (req, res) => {
         r.created_at DESC
     `;
     const stmt = db.prepare(sql);
-    const requests = stmt.all(...params);
+    const rawRequests = stmt.all(...params);
+    const requests = rawRequests.map(r => ({
+      ...r,
+      modpack_thumbnail: cleanThumbnail(r.modpack_thumbnail),
+    }));
 
     return res.json({
       success: true,
@@ -135,7 +139,11 @@ router.get('/my-downloads', requireAuth, (req, res) => {
       WHERE r.requester_id = ?
       ORDER BY r.created_at DESC
     `);
-    const downloads = stmt.all(requesterId);
+    const rawDownloads = stmt.all(requesterId);
+    const downloads = rawDownloads.map(d => ({
+      ...d,
+      modpack_thumbnail: cleanThumbnail(d.modpack_thumbnail),
+    }));
 
     return res.json({
       success: true,
@@ -169,7 +177,11 @@ router.get('/my-modpacks', requireAuth, (req, res) => {
       WHERE m.owner_id = ?
       ORDER BY m.created_at DESC
     `);
-    const modpacks = stmt.all(ownerId);
+    const rawModpacks = stmt.all(ownerId);
+    const modpacks = rawModpacks.map(m => ({
+      ...m,
+      thumbnail: cleanThumbnail(m.thumbnail),
+    }));
 
     return res.json({
       success: true,

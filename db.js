@@ -93,17 +93,36 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_requests_requester ON download_requests(requester_id);
 `);
 
-// Create modpack_pages table for Phase 6
-db.exec(`
-  CREATE TABLE IF NOT EXISTS modpack_pages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    modpack_id INTEGER UNIQUE NOT NULL REFERENCES modpacks(id) ON DELETE CASCADE,
-    layout_json TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+// Export default SVG fallback thumbnail for modpacks
+export const DEFAULT_THUMBNAIL_SVG = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22800%22%20height%3D%22400%22%20fill%3D%22%230c1410%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%22796%22%20height%3D%22396%22%20fill%3D%22none%22%20stroke%3D%22%232dd4bf%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%228%208%22%20opacity%3D%220.4%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2248%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%232dd4bf%22%20font-family%3D%22monospace%22%20font-weight%3D%22bold%22%20font-size%3D%2228%22%3EMINECRAFT%20MODPACK%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2260%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%3EOfficial%20Community%20Release%3C%2Ftext%3E%3C%2Fsvg%3E";
 
-  CREATE INDEX IF NOT EXISTS idx_pages_modpack ON modpack_pages(modpack_id);
+export function cleanThumbnail(thumb) {
+  if (!thumb || thumb === '' || thumb.startsWith('/uploads/')) {
+    return DEFAULT_THUMBNAIL_SVG;
+  }
+  return thumb;
+}
+
+// Create site_settings table for homepage customization and configuration
+db.exec(`
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
+
+// Clean legacy upload paths from modpacks so they never 404 or disappear
+try {
+  db.exec(`UPDATE modpacks SET thumbnail = '${DEFAULT_THUMBNAIL_SVG}' WHERE thumbnail IS NULL OR thumbnail = '' OR thumbnail LIKE '/uploads/%'`);
+} catch (e) {}
+
+// Seed default featured_modpack_id if not present
+try {
+  const existingFeatured = db.prepare('SELECT value FROM site_settings WHERE key = ?').get('featured_modpack_id');
+  if (!existingFeatured) {
+    db.prepare('INSERT INTO site_settings (key, value) VALUES (?, ?)').run('featured_modpack_id', '1');
+  }
+} catch (e) {}
 
 // Migration: Ensure 'role' column exists in users table
 try {
@@ -250,8 +269,9 @@ function saveSnapshot() {
     const modpacks = db.prepare('SELECT * FROM modpacks').all();
     const download_requests = db.prepare('SELECT * FROM download_requests').all();
     const modpack_pages = db.prepare('SELECT * FROM modpack_pages').all();
+    const site_settings = db.prepare('SELECT * FROM site_settings').all();
 
-    const snapshot = { users, modpacks, download_requests, modpack_pages, timestamp: Date.now() };
+    const snapshot = { users, modpacks, download_requests, modpack_pages, site_settings, timestamp: Date.now() };
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
 
     // Also save a fallback copy in rootDir/data if writable
@@ -327,6 +347,12 @@ function restoreSnapshot() {
           db.prepare('INSERT OR REPLACE INTO modpack_pages (id, modpack_id, layout_json, updated_at) VALUES (?, ?, ?, ?)')
             .run(pg.id, pg.modpack_id, pg.layout_json, pg.updated_at || new Date().toISOString());
         }
+      }
+    }
+
+    if (Array.isArray(snapshot.site_settings)) {
+      for (const s of snapshot.site_settings) {
+        db.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)').run(s.key, s.value);
       }
     }
   } catch (err) {
