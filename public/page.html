@@ -264,26 +264,8 @@
     const ownerBanner = document.getElementById('owner-banner');
     const btnEditPage = document.getElementById('btn-edit-page');
 
-    if (!modpackId) {
-      container.replaceChildren();
-      const errCard = document.createElement('div');
-      errCard.className = 'empty-state';
-      const h3 = document.createElement('h3');
-      h3.textContent = 'Modpack Not Specified';
-      const p = document.createElement('p');
-      p.textContent = 'Please select a valid modpack from the directory.';
-      const a = document.createElement('a');
-      a.href = '/modpacks.html';
-      a.className = 'btn btn-primary';
-      a.style.marginTop = '1rem';
-      a.textContent = 'Browse Modpacks';
-      errCard.appendChild(h3);
-      errCard.appendChild(p);
-      errCard.appendChild(a);
-      container.appendChild(errCard);
-    } else {
-      loadCustomPage(modpackId);
-    }
+    let targetPageId = modpackId || '1';
+    loadCustomPage(targetPageId);
 
     async function loadCustomPage(id) {
       try {
