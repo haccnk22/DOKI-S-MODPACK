@@ -1,5 +1,8 @@
 import app from '../app.js';
 
 export default function handler(req, res) {
+  if (!req.url.startsWith('/api') && !req.url.startsWith('/uploads') && !req.url.startsWith('/vendor')) {
+    req.url = '/uploads' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
   return app(req, res);
 }
